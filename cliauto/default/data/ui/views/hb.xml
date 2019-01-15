@@ -1,0 +1,7 @@
+<dashboard hideEdit="true">
+  <label>HB</label>
+  <row>
+    <html><h1 id="splunkcliautohb">CLI Auto Heartbeat</h1>
+    </html>
+  </row>
+</dashboard>

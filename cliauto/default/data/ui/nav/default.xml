@@ -1,0 +1,5 @@
+<nav search_view="cliauto" color="#65A637">
+  <view name="cli_auto" default='true' />
+  <view name="search"/>
+  <view name="help" />
+</nav>

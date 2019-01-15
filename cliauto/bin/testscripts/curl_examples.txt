@@ -1,0 +1,34 @@
+# POST curl command port 8089
+
+curl -k -u admin:changeme https://localhost:8089/services/cliauto -d cmdtype="cli_swfwsv" -d suser="admin" -d spw="changeme" -d var1='' -d var2='' -d var3='' -d var4='' -d pw1='' -d pw2='' -d pw3='' -d check1='' -d drop1='' -d nodelist="sw1.csv"
+
+curl -v -i -k -u admin:changeme https://localhost:8089/services/cliauto -d cmdtype="hb"
+curl -v -i -k -u admin:changeme https://localhost:8089/services/cliauto -d cmdtype="lrp" -d suser="admin" -d spw="changeme" -d var1='' -d var2='' -d var3='' -d var4='' -d pw1='' -d pw2='' -d pw3='' -d check1='' -d drop1='' -d nodelist="sw1.csv"
+
+# POST curl command port 8000
+#
+# refer to https://github.com/jrervin/splunk-rest-examples/blob/master/README.md at section "Usage via splunkweb"
+# An expose stanza is needed in web.conf to "expose" this custom REST endpoint on port 8000. (Port 8089 may be less likely open)
+
+curl -k http://localhost:8000/en-US/splunkd/__raw/services/cliauto -H 'Cookie: session_id_8000=s0t815cjhf186rbcpon6xe0wcuc8hk86; splunkd_8000=NNTBFck6yEGuPu7dT5AvvFtORqzPtGgQqHJSJNSU59S^Uq5RVpvZljc68Djm76IO8EaLvX8XCVE3rJWovTudG_deHXsYq163S0Fy6inau^egGq1C2DVhhs7BKLrEcOEKndVDVo; splunkweb_csrf_token_8000=T9iz4SCnvVOgit1fPl9SN6abwDg75yK8'
+
+# Example REST API web browser and curl strings
+# https://localhost:8089/servicesNS/nobody/cliauto/storage/collections/data/cliauto_pid_collection
+# curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/storage/collections/data/cliauto_pid_collection -H "Content-Type: application/json" -d '{ "Status": "Busy", "NodeList": "SW1.csv", "TargetUser": "tuser", "Timestamp": 1536615480000, "PID": "45548", "SessionUser": "admin", "CommandType": "CLI", "Command": "uptime", "ScriptUser": "suser" }'
+
+# Example curl command from Copy as Curl command on Firefox web browser on Splunk Dev VM
+
+curl -k 'https://127.0.0.1/en-US/splunkd/__raw/services/cliauto' -H 'Host: 127.0.0.1' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0' -H 'Accept: text/javascript, text/html, application/xml, text/xml, */*' -H 'Accept-Language: en-US,en;q=0.5' --compressed -H 'X-Splunk-Form-Key: 1063844629318995911' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'X-Requested-With: XMLHttpRequest' -H 'Cookie: session_id_443=2ae6f58986fa6f9bba7190d273c3980f2a4d28de; splunkd_443=aSBQiHOWdLBgTjtwieWg^WBJX^^LXmIBe6zKXOFkzU^mZJOeZr1qk8S86DBiNzLDFJNcBuu7pupickSH9jDE9PmJgLXGisPW^Qp5cRqcg2A2CKn8I1jDICPz6oKLP89iipXm; splunkweb_csrf_token_443=1063844629318995911' -H 'Connection: keep-alive' --data 'cmdtype=hb'
+
+# Copied from curl command above and some headers removed
+curl -k 'https://127.0.0.1/en-US/splunkd/__raw/services/cliauto' -H 'X-Splunk-Form-Key: 1063844629318995911' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'X-Requested-With: XMLHttpRequest' -H 'Cookie: session_id_443=2ae6f58986fa6f9bba7190d273c3980f2a4d28de; splunkd_443=aSBQiHOWdLBgTjtwieWg^WBJX^^LXmIBe6zKXOFkzU^mZJOeZr1qk8S86DBiNzLDFJNcBuu7pupickSH9jDE9PmJgLXGisPW^Qp5cRqcg2A2CKn8I1jDICPz6oKLP89iipXm; splunkweb_csrf_token_443=1063844629318995911' --data 'cmdtype=hb'
+
+
+curl -k 'https://127.0.0.1/en-US/splunkd/__raw/services/cliauto' -H 'Host: 127.0.0.1' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0' -H 'Accept: text/javascript, text/html, application/xml, text/xml, */*' -H 'Accept-Language: en-US,en;q=0.5' --compressed -H 'X-Splunk-Form-Key: 1063844629318995911' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'X-Requested-With: XMLHttpRequest' -H 'Cookie: session_id_443=2ae6f58986fa6f9bba7190d273c3980f2a4d28de; splunkd_443=aZwvP370dWmworXGAW_ppUrgK81YplH6gK1^kUgsOHYa5RI7mKJn03TGxhsEtWuDgAka7ei1V^cCD40PSqUMp4LG5fAuC4YiNqUgrXWIvniFoTPOLeqn6bcVVN38nPzb; splunkweb_csrf_token_443=11946518269202916974' -H 'Connection: keep-alive' --data 'cmdtype=lrp;suser=;spw=;var1=;var2=;var3=;var4=;pw1=;pw2=;pw3=;check1=;drop1=;nodelist=sw1.csv'
+
+
+Suspected variables needed for permissions to Splunk web
+'X-Splunk-Form-Key: 1063844629318995911'
+session_id_443=2ae6f58986fa6f9bba7190d273c3980f2a4d28de
+splunkd_443=aSBQiHOWdLBgTjtwieWg^WBJX^^LXmIBe6zKXOFkzU^mZJOeZr1qk8S86DBiNzLDFJNcBuu7pupickSH9jDE9PmJgLXGisPW^Qp5cRqcg2A2CKn8I1jDICPz6oKLP89iipXm
+splunkweb_csrf_token_443=1063844629318995911
