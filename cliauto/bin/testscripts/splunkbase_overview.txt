@@ -1,0 +1,11 @@
+For the less technically informed, CLI stands for "Command Line Interface" while "Auto" is a reference to automation.
+
+If you answer "Yes" to any of the following questions, you may want to consider downloading/installing this app with the assistance of your local friendly Splunk administrator/power user.
+
+- Do you manage/support several (10+, 100+, 1000+, etc.) network devices that have a CLI (Command Line Interface)?
+- Has your team been requested to meet a compliance mandate (e.g. periodic password change) for your numerous CLI compatible network devices ?
+- Does your team spend numerous man hours performing management/support tasks on network devices that might be solved by automation via CLI?
+
+For those folks that have had the good fortune to work/study within the IT networking and/or cyber security fields, you probably are aware that several brands/models of networking devices have a CLI (Command Line Interface). Examples of network devices are firewalls, routers, switches, gateways, servers, wireless access points, workstations/laptops, etc. Also you may be aware, the more modern network devices typically use the ssh (Secure Shell) protocol to secure a CLI network session. It should be noted that this app only supports the ssh CLI protocol. In other words, this app does not support other CLI protocols like Telnet. 
+
+For the more technically minded, the CLI Auto app provides a job engine (via a custom REST API endpoint) and an user interface to connect to several nodes (hosts) via ssh to execute and index (i.e. log to Splunk) the output of a Command Type (i.e. a set of CLI commands).
