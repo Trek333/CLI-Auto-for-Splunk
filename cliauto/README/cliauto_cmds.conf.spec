@@ -18,6 +18,9 @@ cmdtype_enable = <no | yes>
 * A value of no disables the cmdtype (not an option in the Script Command drop down)
 * A value of yes enables the cmdtype (an option in the Script Command drop down)
 
+output_line_delimiter = <delimiter string>
+* A <delimiter string> to replace line separator characters
+
 kv_cmd_string = <short description>
 * A <short description> (human readable) of the cmd type that displayed in the Script Command drop down and the Command field of the KVStore history table
 

@@ -1,0 +1,22 @@
+What is the best practice for providing full CRUD (Create, Read, Update, & Delete) UI features for the conf files of a third party application for Splunk?
+
+Can someone point me to the best practice for providing **full** CRUD (Create, Read, Update, & **Delete**) UI features for the conf files of a third party application for Splunk? (*with emphasis on the Delete part of the CRUD acronym*)
+
+I have searched the Splunk websites (answers, docs, etc.) and reviewed apps from splunkbase, but the design model that allows full CRUD control of a conf file, stanza, and key/value pair with the REST API alludes me (or some needed REST API features do not exist). Based on the REST API reference for Configuration endpoints, endpoints exist to create, read, and update a conf file, stanza, and key/value pair local folder conf file, but no endpoints exist to delete a conf file or key/value pair in the local folder. The endpoint to delete a stanza works for a local folder stanza created through the REST API, but a local folder stanza cannot be deleted if it exists in the conf file of the default folder also (see error below). 
+
+Error received to delete a stanza that exists in the local and default conf files
+Object id=stanza_name cannot be deleted in config=conf_file_name.
+
+The documentation in the following urls were used to verify that fully functional configuration deletion endpoints do not exist
+
+REST API Reference Manual - Configuration endpoint descriptions
+https://docs.splunk.com/Documentation/Splunk/7.2.3/RESTREF/RESTconf
+
+REST API Tutorials - Accessing and updating Splunk Enterprise configurations
+https://docs.splunk.com/Documentation/Splunk/latest/RESTTUT/RESTconfigurations
+
+With the Splunk configuration file precedence concept, I would guess that fully functional delete endpoints should exist to allow deletion of a conf file, stanza, and key/value pair in a local folder. If deletion is considered dangerous for the local folders of the Splunk application itself, deletion endpoints should exist for the local folder of a third party app to allow an app to conform to the configuration file precedence concept. An example use case is a button on an app's UI to delete a local folder conf file which would revert the conf file settings to the conf file in the default folder. Or maybe I am just missing a keypoint(s) on managing the configuration within Splunk with a CRUD UI.
+
+
+
+

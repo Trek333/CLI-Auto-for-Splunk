@@ -1,0 +1,79 @@
+curl statements to modify app conf file properties (i.e. change conf property with conf file in local folder)
+
+curl -k -u admin:pass https://localhost:8089/servicesNS/nobody/search/configs/conf-props/myweblogs
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/search/storage/collections/data/testCollectionA -H "Content-Type: application/json" -d '{ "myKey": "abc",  "myOtherKey": "abcdef"}'
+ui_status_title=The status of the job
+
+
+curl -k -u admin:pass --request DELETE https://localhost:8089/servicesNS/nobody/search/configs/conf-props/myweblogs
+
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main -d ui_status_title="from local conf file"
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_cmds/cli_cpfwsep
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-splunk_ta_solarwinds_settings/proxy
+
+/servicesNS/nobody/cliauto/storage/collections/data/cliauto_pid_collection
+
+- Unable to delete local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto
+<msg type="ERROR">Cannot perform action "DELETE" without a target name to act on.</msg>
+
+- Unable to delete main stanza in local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main
+<msg type="ERROR">Object id=main cannot be deleted in config=cliauto.</msg>
+
+- Update a key/value pair in the main stanza of local conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main -d ui_status_title="This is a test."
+
+- Add stanza named main2 to local conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto -d name=main2
+
+- Delete stanza named main2 in local conf file (it appears that you can only delete stanzas added with REST API)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main2
+
+- Add stanza named main that already exists in default conf file to local conf file (see error below)
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto -d name=main
+<msg type="ERROR">An object with name=main already exists</msg>
+
+- Delete key/value pair ui_status_title in local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/sservices/properties/cliauto/configs/conf-cliauto/main/ui_status_title
+<title>405 Method Not Allowed</title></head><body><h1>Method Not Allowed</h1><p>Specified method is not allowed on this resource.</p></body></html>
+
+- Delete main stanza in local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/sservices/properties/cliauto/configs/conf-cliauto/main
+<title>405 Method Not Allowed</title></head><body><h1>Method Not Allowed</h1><p>Specified method is not allowed on this resource.</p></body></html>
+
+- Delete main stanza in local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/sservices/properties/cliauto/configs/conf-cliauto
+<title>405 Method Not Allowed</title></head><body><h1>Method Not Allowed</h1><p>Specified method is not allowed on this resource.</p></body></html>
+
+- Delete main stanza in local conf file (see error below)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_cmds/cli_cpfwsep
+<msg type="ERROR">Object id=cli_cpfwsep cannot be deleted in config=cliauto_cmds.</msg>
+
+- Add stanza named cli_new to local conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_cmds -d name=cli_new
+
+- Delete stanza named cli_new in local conf file (it appears that you can only delete stanzas added with REST API)
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_cmds/cli_new
+
+- Get stanza named main_local from local conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main_local
+
+- Delete stanza named main_local from local conf file
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto/main_local
+
+
+- Test cliauto_ui file creation with REST API
+
+- Add stanza named main to local cliauto_ui conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_ui -d name=main
+
+- Delete stanza named main from local cliauto_ui conf file
+curl -k -u admin:changeme --request DELETE https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_ui/main
+
+- Get stanza named main from local cliauto_ui conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_ui/main
+
+- Update a key/value pair in the main stanza of local cliauto_ui conf file
+curl -k -u admin:changeme https://localhost:8089/servicesNS/nobody/cliauto/configs/conf-cliauto_ui/main -d ui_status_title="This is a test."

@@ -26,8 +26,11 @@ ConnectRetries = <number of ssh connect retries>
 ConnectTimeout = <time in seconds>
 * Set the ConnectTimeout(seconds) option for ssh login. Min = 15, Max = 600.
 
+SocketRetries = <number of socket connect retries>
+* Set the number of socket retries. Min = 0, Max = 10.
+
 SocketTimeout = <time in seconds>
-* Set the SocketTimeout(seconds) option to check if port is open. Min = 0, Max = 5. 0 disables port check
+* Set the SocketTimeout(seconds) option to check if port is open. Min = 0, Max = 10. 0 disables port check
 
 sshport = <port number>
 * Set the port for ssh command. Min = 1, Max = 65535.
@@ -89,6 +92,12 @@ absolute_input_data_length_max = <number of characters>
 
 allow_duplicate_ip_address = <no | yes>
 * Allow duplicate ip address in node list
+
+kex_verbose_level = <0 | 1 | 2 | 3>
+* ssh key exchange verbose level for the "Check ssh Key Exchange" command type
+
+kex_filter_regex = <regular expression>
+* ssh key exchange regex filter for the "Check ssh Key Exchange" command type
 
 ui_job_rows = <number of jobs>
 * UI <number of jobs> (rows) in history to display from KVStore table.

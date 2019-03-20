@@ -1,0 +1,16 @@
+<dashboard hideEdit="true">
+  <label>Tours</label>
+  <row>
+    <panel>
+      <html>
+       <a href="?tour=cliauto_intro">Intro</a>
+      </html>
+      <html>
+       <a href="?tour=lookup_add">Steps to create/add a Node List</a>
+      </html>
+      <html>
+       <a href="?tour=create_cmdtype">Steps to create a new Command Type</a>
+      </html>
+    </panel>
+  </row>
+</dashboard>

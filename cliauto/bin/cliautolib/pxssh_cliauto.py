@@ -27,6 +27,21 @@ class ExceptionPxsshLoginTimeout(ExceptionPexpect):
     '''Raised for pxssh exceptions.
     '''
 
+# [JB] - added specific exception for Host Key Changed
+class ExceptionPxsshHostKeyChanged(ExceptionPexpect):
+    '''Raised for pxssh exceptions.
+    '''
+
+# [JB] - added specific exception for Max Hosts Exceeded
+class ExceptionPxsshMaxHostsExceeded(ExceptionPexpect):
+    '''Raised for pxssh exceptions.
+    '''
+
+# [JB] - added specific exception for No Cipher Found
+class ExceptionPxsshNoCipherFound(ExceptionPexpect):
+    '''Raised for pxssh exceptions.
+    '''
+
 class pxssh_cliauto(pxssh.pxssh):
 
 # [JB] - The pxssh login function was overridden due to incompatibility with Sonicwall, Checkpoint, and Palo Alto firewalls
@@ -48,7 +63,16 @@ class pxssh_cliauto(pxssh.pxssh):
                 password_regex=r'(?i)(?:password:)|(?:passphrase for key)',
                 ssh_tunnels={}, spawn_local_ssh=True,
                 sync_original_prompt=True, ssh_config=None,
-                cipher=None, access_denied_regex="(?i)access denied|(?i)permission denied"):
+                cipher=None, 
+                host_key_changed_regex="(?i)WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED",
+                no_cipher_found_regex="(?i)no matching cipher found",
+                host_key_check_regex="(?i)are you sure you want to continue connecting",
+                access_denied_regex="(?i)access denied|(?i)permission denied",
+                terminal_type_regex="(?i)terminal type",
+                too_many_hosts_regex="(?i)maximum number of ssh sessions are active",
+                connection_closed_regex="(?i)connection closed by remote host",
+                verbose_level=0, check_kex_only=False, kex_filter_regex=r'(kex:\s.*[\s\S]?)'):
+
         '''This logs the user into the given server.
 
         It uses
@@ -95,10 +119,10 @@ class pxssh_cliauto(pxssh.pxssh):
         '''
         #[JB] - added line below due to Sonicwall password prompt difference in 6.1.x vs 6.2.x and access denied regex is not a option variable
         #session_regex_array = ["(?i)are you sure you want to continue connecting", original_prompt, password_regex, "(?i)permission denied", "(?i)terminal type", TIMEOUT]
-        session_regex_array = ["(?i)are you sure you want to continue connecting", original_prompt, password_regex, access_denied_regex, "(?i)terminal type", TIMEOUT]
+        session_regex_array = [host_key_changed_regex, no_cipher_found_regex, host_key_check_regex, original_prompt, password_regex, access_denied_regex, terminal_type_regex, TIMEOUT]
         session_init_regex_array = []
         session_init_regex_array.extend(session_regex_array)
-        session_init_regex_array.extend(["(?i)connection closed by remote host", EOF])
+        session_init_regex_array.extend([too_many_hosts_regex, connection_closed_regex, EOF])
 
         ssh_options = ''.join([" -o '%s=%s'" % (o, v) for (o, v) in self.options.items()])
         if quiet:
@@ -146,12 +170,23 @@ class pxssh_cliauto(pxssh.pxssh):
                         ssh_options = ssh_options + ' -' + cmd_type + ' ' + str(tunnel)
         #[JB] - added cipher option for ssh
         #cmd = "ssh %s -l %s %s" % (ssh_options, username, server)
+        #cmd = "ssh %s -c %s -l %s %s" % (ssh_options, cipher, username, server)
         if cipher!=None:
-            cmd = "ssh %s -c %s -l %s %s" % (ssh_options, cipher, username, server)
+            cmd = "ssh %s -c %s " % (ssh_options, cipher)
         else:
-            cmd = "ssh %s -l %s %s" % (ssh_options, username, server)
+            cmd = "ssh %s " % (ssh_options)
+
+        if verbose_level==1:
+            cmd = cmd + "-v "
+        elif verbose_level==2:
+            cmd = cmd + "-vv "
+        elif verbose_level==3:
+            cmd = cmd + "-vvv "
+        cmd = cmd + "-l %s %s" % (username, server)
+
         if self.debug_command_string:
             return(cmd)
+        logging.debug('cmd=' + cmd)
 
         # Are we asking for a local ssh command or to spawn one in another session?
         if spawn_local_ssh:
@@ -161,9 +196,63 @@ class pxssh_cliauto(pxssh.pxssh):
 
         # This does not distinguish between a remote server 'password' prompt
         # and a local ssh 'passphrase' prompt (for unlocking a private key).
-        i = self.expect(session_init_regex_array, timeout=login_timeout)
+        if check_kex_only:
+            session_init_regex_array = [host_key_changed_regex, no_cipher_found_regex, host_key_check_regex, terminal_type_regex, \
+                password_regex, access_denied_regex, TIMEOUT, too_many_hosts_regex, connection_closed_regex, EOF]
+            kex_output = ""
+            i = self.expect(session_init_regex_array, timeout=login_timeout)
+            if i==0:
+                self.close()
+                raise ExceptionPxsshHostKeyChanged('Host key changed')
+            if i==1:
+                self.close()
+                raise ExceptionPxsshNoCipherFound('No Cipher found')
+            if i==2:
+                kex_output = self.before + self.after
+                self.sendline("yes")
+                i = self.expect(session_init_regex_array, timeout=login_timeout)
+            if i==3:
+                kex_output = self.before + self.after
+                self.sendline(terminal_type)
+                i = self.expect(session_init_regex_array, timeout=login_timeout)
+
+            # Second pass
+            if i==4:
+                kex_output = kex_output + self.before + self.after
+                kex_output_list = re.findall(kex_filter_regex, kex_output)
+                kex_output_filtered = ''.join(kex_output_list)
+                self.close()
+                return kex_output_filtered
+            if i==5:
+                self.close()
+                raise ExceptionPxsshAccessDenied('access denied')
+            if i==6:
+                self.close()
+                raise ExceptionPxsshLoginTimeout('timeout')
+            if i==7:
+                self.close()
+                raise ExceptionPxsshMaxHostsExceeded('max hosts exceeded')
+            if i==8:
+                self.close()
+                raise ExceptionPxssh('connection closed')
+            if i==9:
+                self.close()
+                raise ExceptionPxssh('Could not establish connection to host')
+
+            self.close()
+            return ''
+
+        else:
+            i = self.expect(session_init_regex_array, timeout=login_timeout)
         # First phase
         if i==0:
+            raise ExceptionPxsshHostKeyChanged('Host key changed')
+        if i==1:
+            self.close()
+            raise ExceptionPxsshNoCipherFound('No Cipher found')
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #if i==0:
+        if i==2:
             # New certificate -- always accept it.
             # This is what you get if SSH does not have the remote host's
             # public key stored in the 'known_hosts' cache.
@@ -171,46 +260,71 @@ class pxssh_cliauto(pxssh.pxssh):
             #[JB] - added timeout variable to expect functions due to inconsistent timeout behavior & Sonicwall login banner behavior differences for several firewalls (extended time to receive "Access denied" message)
             #i = self.expect(session_regex_array)
             i = self.expect(session_regex_array, timeout=login_timeout)
-        if i==2: # password or passphrase
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #if i==2: # password or passphrase
+        if i==4: # password or passphrase
             self.sendline(password)
             #[JB] - added line below due to Sonicwall login banner and password prompt difference in 6.1.x vs 6.2.x 
-            session_regex_array = ["(?i)are you sure you want to continue connecting", original_prompt, "do not check for password prompt again and update access denied string", access_denied_regex, "(?i)terminal type", TIMEOUT]
+            session_regex_array = [host_key_changed_regex, no_cipher_found_regex, host_key_check_regex, original_prompt, \
+                "do not check for password prompt again and update access denied string", access_denied_regex, terminal_type_regex, TIMEOUT]
             #[JB] - added timeout variable to expect functions due to inconsistent timeout behavior & Sonicwall login banner behavior differences for several firewalls (extended time to receive "Access denied" message)
             #i = self.expect(session_regex_array)
             i = self.expect(session_regex_array, timeout=login_timeout)
-        if i==4:
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #if i==4:
+        if i==6:
             self.sendline(terminal_type)
             #[JB] - added timeout variable to expect functions due to inconsistent timeout behavior & Sonicwall login banner behavior differences for several firewalls (extended time to receive "Access denied" message)
             #i = self.expect(session_regex_array)
             i = self.expect(session_regex_array, timeout=login_timeout)
-        if i==7:
+        if i==8:
+            self.close()
+            raise ExceptionPxsshMaxHostsExceeded('max hosts exceeded')
+        if i==9:
+            self.close()
+            raise ExceptionPxssh('Connection closed by host')
+        #[JB] - Increase check of i by 2 to check for Host key change at i==0 and too many hosts at i==8
+        #if i==7:
+        if i==10:
             self.close()
             raise ExceptionPxssh('Could not establish connection to host')
 
         # Second phase
-        if i==0:
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #if i==0:
+        if i==2:
             # This is weird. This should not happen twice in a row.
             self.close()
             raise ExceptionPxssh('Weird error. Got "are you sure" prompt twice.')
-        elif i==1: # can occur if you have a public key pair set to authenticate.
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==1: # can occur if you have a public key pair set to authenticate.
+        elif i==3: # can occur if you have a public key pair set to authenticate.
             ### TODO: May NOT be OK if expect() got tricked and matched a false prompt.
             pass
-        elif i==2: # password prompt again
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==2: # password prompt again
+        elif i==4: # password prompt again
             # For incorrect passwords, some ssh servers will
             # ask for the password again, others return 'denied' right away.
             # If we get the password prompt again then this means
             # we didn't get the password right the first time.
             self.close()
             raise ExceptionPxssh('password refused')
-        elif i==3: # permission denied -- password was bad.
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==3: # permission denied -- password was bad.
+        elif i==5: # permission denied -- password was bad.
             self.close()
             #[JB] - added specific exception for Access Denied
             #raise ExceptionPxssh('permission denied')
             raise ExceptionPxsshAccessDenied('access denied')
-        elif i==4: # terminal type again? WTF?
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==4: # terminal type again? WTF?
+        elif i==6: # terminal type again? WTF?
             self.close()
             raise ExceptionPxssh('Weird error. Got "terminal type" prompt twice.')
-        elif i==5: # Timeout
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==5: # Timeout
+        elif i==7: # Timeout
             #This is tricky... I presume that we are at the command-line prompt.
             #It may be that the shell prompt was so weird that we couldn't match
             #it. Or it may be that we couldn't log in for some other reason. I
@@ -225,7 +339,9 @@ class pxssh_cliauto(pxssh.pxssh):
             self.close()
             raise ExceptionPxsshLoginTimeout('timeout')
 
-        elif i==6: # Connection closed by remote host
+        #[JB] - Increase check of i by 2 to check for Host key change (i==0) & No Cipher found (i==1)
+        #elif i==6: # Connection closed by remote host
+        elif i==8: # Connection closed by remote host
             self.close()
             raise ExceptionPxssh('connection closed')
         else: # Unexpected
@@ -244,4 +360,3 @@ class pxssh_cliauto(pxssh.pxssh):
                                      '(received: %r, expected: %r).' % (
                                          self.before, self.PROMPT,))
         return True
-

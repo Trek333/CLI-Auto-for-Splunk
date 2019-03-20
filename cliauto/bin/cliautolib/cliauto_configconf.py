@@ -47,13 +47,14 @@ class configconf(object):
             self.source = 'cliauto'
             self.ConnectRetries = 0
             self.ConnectTimeout = 15
+            self.SocketRetries = 0
             self.SocketTimeout = 2
             self.sshport = 22
             self.cipher = None
             self.StrictHostKeyChecking = ''
-            self.HostKeyAlgorithms = ''
-            self.KexAlgorithms = ''
-            self.PreferredAuthentications = ''
+            self.HostKeyAlgorithms = None
+            self.KexAlgorithms = None
+            self.PreferredAuthentications = None
             self.MaxThreads = 75
             self.pid_history_days = 30
             self.HBTimeout = 10
@@ -64,6 +65,8 @@ class configconf(object):
             self.default_input_data_length_max = 100
             self.absolute_input_data_length_max = 1000
             self.allow_duplicate_ip_address = '0'
+            self.kex_verbose_level = 2
+            self.kex_filter_regex = r'(kex:\s.*[\s\S]?)'
 
             self.hostcount = 0
             self.hosts = []
@@ -103,6 +106,9 @@ class configconf(object):
 
     def ConnectTimeout(self):
         return self.ConnectTimeout
+
+    def SocketRetries(self):
+        return self.SocketRetries
 
     def SocketTimeout(self):
         return self.SocketTimeout
@@ -154,6 +160,12 @@ class configconf(object):
 
     def allow_duplicate_ip_address(self):
         return self.allow_duplicate_ip_address
+
+    def kex_verbose_level(self):
+        return self.kex_verbose_level
+
+    def kex_filter_regex(self):
+        return self.kex_filter_regex
 
     def hostcount(self):
         return self.hostcount
@@ -324,20 +336,22 @@ class configconf(object):
                     self.ConnectRetries = key.childNodes[0].nodeValue
                 if key.getAttribute('name') == 'ConnectTimeout': 
                     self.ConnectTimeout = key.childNodes[0].nodeValue
+                if key.getAttribute('name') == 'SocketRetries': 
+                    self.SocketRetries = key.childNodes[0].nodeValue
                 if key.getAttribute('name') == 'SocketTimeout': 
                     self.SocketTimeout = key.childNodes[0].nodeValue
                 if key.getAttribute('name') == 'sshport': 
                     self.sshport = key.childNodes[0].nodeValue
                 if key.getAttribute('name') == 'cipher': 
-                    self.cipher = key.childNodes[0].nodeValue
+                    self.cipher = self.getnodevalue(key.childNodes)
                 if key.getAttribute('name') == 'StrictHostKeyChecking': 
                     self.StrictHostKeyChecking = key.childNodes[0].nodeValue.strip('"')
                 if key.getAttribute('name') == 'HostKeyAlgorithms': 
-                    self.HostKeyAlgorithms = key.childNodes[0].nodeValue
+                    self.HostKeyAlgorithms = self.getnodevalue(key.childNodes)
                 if key.getAttribute('name') == 'KexAlgorithms': 
-                    self.KexAlgorithms = key.childNodes[0].nodeValue
+                    self.KexAlgorithms = self.getnodevalue(key.childNodes)
                 if key.getAttribute('name') == 'PreferredAuthentications': 
-                    self.PreferredAuthentications = key.childNodes[0].nodeValue
+                    self.PreferredAuthentications = self.getnodevalue(key.childNodes)
                 if key.getAttribute('name') == 'MaxThreads': 
                     self.MaxThreads = key.childNodes[0].nodeValue
 
@@ -360,6 +374,11 @@ class configconf(object):
                 if key.getAttribute('name') == 'allow_duplicate_ip_address':
                     self.allow_duplicate_ip_address = key.childNodes[0].nodeValue
 
+                if key.getAttribute('name') == 'kex_verbose_level': 
+                    self.kex_verbose_level = key.childNodes[0].nodeValue
+                if key.getAttribute('name') == 'kex_filter_regex': 
+                    self.kex_filter_regex = key.childNodes[0].nodeValue
+
             # Validate ConnectRetries from conf file
             vns = self.validate_num_setting('ConnectRetries', self.ConnectRetries, 0, 0, 10)
             if vns[0] != "Success":
@@ -372,8 +391,14 @@ class configconf(object):
                 return vns[0]
             self.ConnectTimeout = vns[1]
 
+            # Validate SocketRetries from conf file
+            vns = self.validate_num_setting('SocketRetries', self.SocketRetries, 0, 0, 10)
+            if vns[0] != "Success":
+                return vns[0]
+            self.SocketRetries = vns[1]
+
             # Validate SocketTimeout from conf file
-            vns = self.validate_num_setting('SocketTimeout', self.SocketTimeout, 2, 1, 5)
+            vns = self.validate_num_setting('SocketTimeout', self.SocketTimeout, 2, 0, 10)
             if vns[0] != "Success":
                 return vns[0]
             self.SocketTimeout = vns[1]
@@ -438,6 +463,12 @@ class configconf(object):
                 return vns[0]
             self.absolute_input_data_length_max = vns[1]
 
+            # Validate kex_verbose_level from conf file
+            vns = self.validate_num_setting('kex_verbose_level', self.kex_verbose_level, 2, 0, 3)
+            if vns[0] != "Success":
+                return vns[0]
+            self.kex_verbose_level = vns[1]
+
             # Get cliauto_cmds
             gcc = self.getconfigcmds()
             if gcc != "Success":
@@ -449,6 +480,16 @@ class configconf(object):
             logging.error('Error, getconfig function, err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             return 'Error, getconfig function, err = ' + str(err)
+
+    def getnodevalue(self, keychildnodes, default_value=None):
+
+        if keychildnodes == []:
+            return default_value
+        else:
+            if keychildnodes[0].nodeValue.strip() == '':
+                return default_value
+            else:
+                return keychildnodes[0].nodeValue
 
     def getconfigcmds(self):
 
@@ -479,6 +520,7 @@ class configconf(object):
                     return keys[0]
 
                 cmdtype_enable = 0
+                output_line_delimiter = ''
                 kv_cmd_string = ''
                 default_fail_msg = ''
                 expect_prompt_regex = ''
@@ -568,6 +610,8 @@ class configconf(object):
 
                     if key.getAttribute('name') == 'cmdtype_enable':
                         cmdtype_enable = key.childNodes[0].nodeValue
+                    elif key.getAttribute('name') == 'output_line_delimiter':
+                        output_line_delimiter = self.getnodevalue(key.childNodes, default_value='')
                     elif key.getAttribute('name') == 'kv_cmd_string':
                         kv_cmd_string = key.childNodes[0].nodeValue
                     elif key.getAttribute('name') == 'expect_prompt_regex':
@@ -820,7 +864,8 @@ class configconf(object):
                             cmd_dict_list.append(cmd_dict)
 
                 self.cmdtype_dict_list.append({ \
-                'cmdtype' : stanza, 'cmdtype_enable' : cmdtype_enable, 'kv_cmd_string' : kv_cmd_string, 'expect_prompt_regex' : expect_prompt_regex, \
+                'cmdtype' : stanza, 'cmdtype_enable' : cmdtype_enable, 'output_line_delimiter' : output_line_delimiter, \
+                'kv_cmd_string' : kv_cmd_string, 'expect_prompt_regex' : expect_prompt_regex, \
                 'default_fail_msg' : default_fail_msg, 'find_regex1' : find_regex1, 'find_regex2' : find_regex2, 'find_regex3' : find_regex3, \
                 'find_regex4' : find_regex4, 'find_regex5' : find_regex5, \
                 'success_msg1' : success_msg1, 'success_msg2' : success_msg2, 'success_msg3' : success_msg3, 'success_msg4' : success_msg4, \

@@ -1,0 +1,27 @@
+[cli_linux_uname]
+cmdtype_enable=yes
+kv_cmd_string=Linux uname --all
+ui_nodelist_title=Select a Linux Node List. See the Help dashboard for instructions to create a Node List.
+ui_cmdtype_title=Executes the Linux "uname" CLI command
+ui_suser_label=Script Username
+ui_suser_title=Enter a Linux username with the proper permissions to execute this Command Type
+ui_suser_placeholder=Enter Script Username
+ui_spw_label=Script Password
+ui_spw_title=Enter the password for the script username
+ui_spw_placeholder=Enter Script Password
+expect_prompt_regex=\$\s|#\s|>\s|\[no\]:\s|% User logout\.
+default_fail_msg=Linux uname --all fail
+find_regex1=uname.+
+success_regex1=uname.+
+success_msg1=Linux uname --all success - see raw result for output
+fail_regex1=Access denied
+fail_msg1=Linux uname --all fail - access denied
+exit_cmd=exit
+cmd01=uname --all
+cmd01_success_regex1=$
+cmd01_fail_regex1=(?i)error
+cmd01_mode_level=0
+cmd02=exit
+cmd02_success_regex1=$
+cmd02_fail_regex1=(?i)error
+cmd02_mode_level=-1

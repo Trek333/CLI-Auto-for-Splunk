@@ -1,5 +1,7 @@
 For the less technically informed, CLI stands for "Command Line Interface" while "Auto" is a reference to automation.
 
+QUICK TIP: After downloading/installing CLI Auto app, click Tours and view the "Intro" tour
+
 If you answer "Yes" to any of the following questions, you may want to consider downloading/installing this app with the assistance of your local friendly Splunk administrator/power user.
 
 - Do you manage/support several (10+, 100+, 1000+, etc.) network devices that have a CLI (Command Line Interface)?

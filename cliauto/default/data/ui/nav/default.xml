@@ -2,4 +2,5 @@
   <view name="cli_auto" default='true' />
   <view name="search"/>
   <view name="help" />
+  <view name="cli_auto_tours"/>
 </nav>
