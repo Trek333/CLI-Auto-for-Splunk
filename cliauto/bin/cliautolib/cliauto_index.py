@@ -10,6 +10,7 @@ from logging.config import fileConfig
 import errno
 import time
 from datetime import datetime
+import operator
 
 # Append directory of this file to the Python path (sys.path) to be able to import cliauto libs
 if os.path.dirname(os.path.realpath(__file__)) not in sys.path:
@@ -79,8 +80,54 @@ class cliauto_index(object):
             ndata = ndata + ' resultstatus="' + ssh_result['resultstatus'] + '"'
 
             # Get any custom result fields
-            for i,custom_result_field_dict in enumerate(ssh_result['custom_result_field_list']):
+            for custom_result_field_dict in ssh_result['custom_result_field_list']:
                 ndata = ndata + ' ' + str(custom_result_field_dict['field_name']) + '="' + str(custom_result_field_dict['value']) + '"'
+
+            # Get any custom fields for duplicate results
+            for custom_result_field_dict in ssh_result['custom_result_field_list']:
+                logging.debug('custom_result_field_dict = ' + str(custom_result_field_dict))
+                try:
+                    custom_result_field_dict['duplicate']
+                    custom_result_field_dict['duplicate_field_name']
+                    logging.debug('custom_result_field_dict[duplicate] = ' + str(custom_result_field_dict['duplicate']))
+                    logging.debug('custom_result_field_dict[duplicate_field_name] = ' + str(custom_result_field_dict['duplicate_field_name']))
+
+                except:
+                    break
+
+                if str(custom_result_field_dict['duplicate']) != 'na':
+                    ndata = ndata + ' duplicate_field_name="' + str(custom_result_field_dict['duplicate_field_name']) + '"'
+                    ndata = ndata + ' duplicate="' + str(custom_result_field_dict['duplicate']) + '"'
+                    break
+
+            # Get cli command times
+            sorted_cmd_times = []
+            index = 1
+            sorted_cmd_times = sorted(ssh_result['cmd_time_dict'].items(), key=operator.itemgetter(1), reverse=True)
+            for cmd_time in sorted_cmd_times:
+                ndata = ndata + ' slow' + str(index) + '_cmd="' + str(cmd_time[0]) + '"'
+                ndata = ndata + ' slow' + str(index) + '_time="' + '%.3f' % round(cmd_time[1], 3) + '"'
+                if index > 2:
+                    break
+                index += 1
+
+            try:
+                ssh_result['login_dict']['login_socket_check_time']
+                ssh_result['login_dict']['login_socket_check_count']
+                ndata = ndata + ' sock_time="' + '%.3f' % round(ssh_result['login_dict']['login_socket_check_time'], 3) + '"'
+                ndata = ndata + ' sock_cnt="' + str(ssh_result['login_dict']['login_socket_check_count']) + '"'
+            except:
+                ndata = ndata + ' sock_time=""'
+                ndata = ndata + ' sock_cnt=""'
+
+            try:
+                ssh_result['login_dict']['login_time']
+                ssh_result['login_dict']['login_connect_count']
+                ndata = ndata + ' login_time="' + '%.3f' % round(ssh_result['login_dict']['login_time'], 3) + '"'
+                ndata = ndata + ' login_cnt="' + str(ssh_result['login_dict']['login_connect_count']) + '"'
+            except:
+                ndata = ndata + ' login_time=""'
+                ndata = ndata + ' login_cnt=""'
 
             ndata = ndata + ' resultraw="' + ssh_result['resultraw'] + '"'
 
@@ -150,6 +197,35 @@ class cliauto_index(object):
                     ndata = ndata + ' duplicate_field_name="' + str(custom_result_field_dict['duplicate_field_name']) + '"'
                     ndata = ndata + ' duplicate="' + str(custom_result_field_dict['duplicate']) + '"'
                     break
+
+            # Get cli command times
+            sorted_cmd_times = []
+            index = 1
+            sorted_cmd_times = sorted(ssh_result['cmd_time_dict'].items(), key=operator.itemgetter(1), reverse=True)
+            for cmd_time in sorted_cmd_times:
+                ndata = ndata + ' slow' + str(index) + '_cmd="' + str(cmd_time[0]) + '"'
+                ndata = ndata + ' slow' + str(index) + '_time="' + '%.3f' % round(cmd_time[1], 3) + '"'
+                if index > 2:
+                    break
+                index += 1
+
+            try:
+                ssh_result['login_dict']['login_socket_check_time']
+                ssh_result['login_dict']['login_socket_check_count']
+                ndata = ndata + ' sock_time="' + '%.3f' % round(ssh_result['login_dict']['login_socket_check_time'], 3) + '"'
+                ndata = ndata + ' sock_cnt="' + str(ssh_result['login_dict']['login_socket_check_count']) + '"'
+            except:
+                ndata = ndata + ' sock_time=""'
+                ndata = ndata + ' sock_cnt=""'
+
+            try:
+                ssh_result['login_dict']['login_time']
+                ssh_result['login_dict']['login_connect_count']
+                ndata = ndata + ' login_time="' + '%.3f' % round(ssh_result['login_dict']['login_time'], 3) + '"'
+                ndata = ndata + ' login_cnt="' + str(ssh_result['login_dict']['login_connect_count']) + '"'
+            except:
+                ndata = ndata + ' login_time=""'
+                ndata = ndata + ' login_cnt=""'
 
             ndata = ndata + ' resultraw="' + ssh_result['resultraw'] + '"'
 

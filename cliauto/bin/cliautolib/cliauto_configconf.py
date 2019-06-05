@@ -791,77 +791,22 @@ class configconf(object):
                                     custom_result_field_list.append(custom_result_field_dict)
                                     break
 
-                    for cmd_index in range(1, 21):
+                    # Get the main branch of CLI cmds
+                    if key.getAttribute('name')[:3] == 'cmd':
+                        gccl = self.getconfigcmdlist(key, keys, 'main')
+                        if gccl[0] != 'Success':
+                            return gccl[0]
+                        logging.debug('gccl[1]=' + str(gccl[1]))
+                        cmd_dict_list = cmd_dict_list + gccl[1]
 
-                        if key.getAttribute('name') == 'cmd' + format(cmd_index, '02'):
-                            cmd_dict = {}
-                            cmd_dict['cmd'] = key.childNodes[0].nodeValue
-
-                            cmd_success_regex_list = []
-                            cmd_fail_regex_list = []
-                            for key in keys[1]:
-                                if key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_expect_prompt_regex':
-                                    cmd_dict['cmd_expect_prompt_regex'] = key.childNodes[0].nodeValue
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_cli_cmd_delay':
-                                    cmd_dict['cmd_cli_cmd_delay'] = key.childNodes[0].nodeValue
-
-                                    # Validate cmd_cli_cmd_delay from conf file
-                                    vns = self.validate_num_setting('cmd_cli_cmd_delay', cmd_dict['cmd_cli_cmd_delay'], 5, 5, 120)
-                                    if vns[0] != "Success":
-                                        return vns[0]
-                                    cmd_dict['cmd_cli_cmd_delay'] = vns[1]
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_mode_level':
-                                    cmd_dict['cmd_mode_level'] = key.childNodes[0].nodeValue
-
-                                    # Validate cmd_mode_level from conf file
-                                    vns = self.validate_num_setting('cmd_mode_level', cmd_dict['cmd_mode_level'], 0, -1, 20)
-                                    if vns[0] != "Success":
-                                        return vns[0]
-                                    cmd_dict['cmd_mode_level'] = vns[1]
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_prompt_regex':
-                                    cmd_dict['cmd_prompt_regex'] = key.childNodes[0].nodeValue
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_prompt_response_string':
-                                    cmd_dict['cmd_prompt_response_string'] = key.childNodes[0].nodeValue.strip('"')
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_prompt_response_mode_level':
-                                    cmd_dict['cmd_prompt_response_mode_level'] = key.childNodes[0].nodeValue
-
-                                    # Validate cmd_prompt_response_mode_level from conf file
-                                    vns = self.validate_num_setting('cmd_prompt_response_mode_level', cmd_dict['cmd_prompt_response_mode_level'], 0, -1, 20)
-                                    if vns[0] != "Success":
-                                        return vns[0]
-                                    cmd_dict['cmd_prompt_response_mode_level'] = vns[1]
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_prompt_override_response_string':
-                                    cmd_dict['cmd_prompt_override_response_string'] = key.childNodes[0].nodeValue.strip('"')
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_prompt_override_response_mode_level':
-                                    cmd_dict['cmd_prompt_override_response_mode_level'] = key.childNodes[0].nodeValue
-
-                                    # Validate cmd_prompt_override_response_mode_level from conf file
-                                    vns = self.validate_num_setting('cmd_prompt_override_response_mode_level', cmd_dict['cmd_prompt_override_response_mode_level'], 0, -1, 20)
-                                    if vns[0] != "Success":
-                                        return vns[0]
-                                    cmd_dict['cmd_prompt_override_response_mode_level'] = vns[1]
-
-                                elif key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_no_config_diff_regex':
-                                    cmd_dict['cmd_no_config_diff_regex'] = key.childNodes[0].nodeValue
-
-                                for cmd_regex_index in range(1, 21):
-                                    if key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_success_regex' + str(cmd_regex_index):
-                                        cmd_success_regex_list.append(key.childNodes[0].nodeValue)
-
-                                for cmd_regex_index in range(1, 21):
-                                    if key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + '_fail_regex' + str(cmd_regex_index):
-                                        cmd_fail_regex_list.append(key.childNodes[0].nodeValue)
-
-                            cmd_dict['cmd_success_regex_list'] = cmd_success_regex_list
-                            cmd_dict['cmd_fail_regex_list'] = cmd_fail_regex_list
-                            cmd_dict_list.append(cmd_dict)
+                    # Get the alternate branches of CLI cmds
+                    if key.getAttribute('name')[:10] == 'cmd_branch':
+                        for branch_index in range(1, 21):
+                            branch_list_name = 'branch' + format(branch_index, '02')
+                            gccl = self.getconfigcmdlist(key, keys, branch_list_name)
+                            if gccl[0] != 'Success':
+                                return gccl[0]
+                            cmd_dict_list = cmd_dict_list + gccl[1]
 
                 self.cmdtype_dict_list.append({ \
                 'cmdtype' : stanza, 'cmdtype_enable' : cmdtype_enable, 'output_line_delimiter' : output_line_delimiter, \
@@ -906,3 +851,117 @@ class configconf(object):
             logging.error('Error, getconfigcmds function, err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             return 'Error, getconfigcmds function, err = ' + str(err)
+
+    def getconfigcmdlist(self, initial_key, keys, branch_list_name):
+
+        try:
+
+            cmd_dict_list = []
+            if branch_list_name == 'main':
+                 branch_list_suffix = ''
+                 branch_list_suffix2 = ''
+            else:
+                branch_list_suffix = '_' + branch_list_name + '_'
+                branch_list_suffix2 = '_' + branch_list_name
+            for cmd_index in range(1, 21):
+
+                if initial_key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02'):
+                    cmd_dict = {}
+                    cmd_dict['cmd' + branch_list_suffix2] = initial_key.childNodes[0].nodeValue
+
+                    cmd_branch_regex_list_dict = {}
+                    cmd_success_regex_list = []
+                    cmd_fail_regex_list = []
+                    for key in keys[1]:
+                        if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_expect_prompt_regex':
+                            cmd_dict['cmd_expect_prompt_regex'] = key.childNodes[0].nodeValue
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_cli_cmd_delay':
+                            cmd_dict['cmd_cli_cmd_delay'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_cli_cmd_delay from conf file
+                            vns = self.validate_num_setting('cmd_cli_cmd_delay', cmd_dict['cmd_cli_cmd_delay'], 5, 5, 120)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_cli_cmd_delay'] = vns[1]
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_mode_level':
+                            cmd_dict['cmd_mode_level'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_mode_level from conf file
+                            vns = self.validate_num_setting('cmd_mode_level', cmd_dict['cmd_mode_level'], 0, -1, 20)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_mode_level'] = vns[1]
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_prompt_regex':
+                            cmd_dict['cmd_prompt_regex'] = key.childNodes[0].nodeValue
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_prompt_response_string':
+                            cmd_dict['cmd_prompt_response_string'] = key.childNodes[0].nodeValue.strip('"')
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_prompt_response_mode_level':
+                            cmd_dict['cmd_prompt_response_mode_level'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_prompt_response_mode_level from conf file
+                            vns = self.validate_num_setting('cmd_prompt_response_mode_level', cmd_dict['cmd_prompt_response_mode_level'], 0, -1, 20)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_prompt_response_mode_level'] = vns[1]
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_prompt_override_response_string':
+                            cmd_dict['cmd_prompt_override_response_string'] = key.childNodes[0].nodeValue.strip('"')
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_prompt_override_response_mode_level':
+                            cmd_dict['cmd_prompt_override_response_mode_level'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_prompt_override_response_mode_level from conf file
+                            vns = self.validate_num_setting('cmd_prompt_override_response_mode_level', cmd_dict['cmd_prompt_override_response_mode_level'], 0, -1, 20)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_prompt_override_response_mode_level'] = vns[1]
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_no_config_diff_regex':
+                            cmd_dict['cmd_no_config_diff_regex'] = key.childNodes[0].nodeValue
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_max_output_before_truncate':
+                            cmd_dict['cmd_max_output_before_truncate'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_max_output_before_truncate from conf file
+                            vns = self.validate_num_setting('cmd_max_output_before_truncate', cmd_dict['cmd_max_output_before_truncate'], 500, 1, 25600)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_max_output_before_truncate'] = vns[1]
+
+                        if branch_list_suffix == '' and 'branch' in key.getAttribute('name'):
+                            for cmd_regex_index in range(1, 21):
+                                for branch_index in range(1, 21):
+                                    branch_sub_list_name = 'branch' + format(branch_index, '02')
+                                    branch_list_sub_abbrev = '_' + branch_sub_list_name + '_'
+                                    if key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + branch_list_sub_abbrev + 'regex' + str(cmd_regex_index):
+                                        try:
+                                            cmd_branch_regex_list_dict[branch_sub_list_name]
+                                        except:
+                                            cmd_branch_regex_list_dict[branch_sub_list_name] = []
+                                        cmd_branch_regex_list_dict[branch_sub_list_name].append(key.childNodes[0].nodeValue)
+
+                        for cmd_regex_index in range(1, 21):
+                            if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_success_regex' + str(cmd_regex_index):
+                                cmd_success_regex_list.append(key.childNodes[0].nodeValue)
+
+                        for cmd_regex_index in range(1, 21):
+                            if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_fail_regex' + str(cmd_regex_index):
+                                cmd_fail_regex_list.append(key.childNodes[0].nodeValue)
+
+                    cmd_dict['cmd_branch_regex_list_dict'] = cmd_branch_regex_list_dict
+                    cmd_dict['cmd_success_regex_list'] = cmd_success_regex_list
+                    cmd_dict['cmd_fail_regex_list'] = cmd_fail_regex_list
+                    cmd_dict_list.append(cmd_dict)
+
+            return 'Success', cmd_dict_list
+
+        except Exception as err:
+            logging.error('Error, getconfigcmdlist function, err = ' + str(err))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            return 'Error, getconfigcmdlist function, err = ' + str(err), cmd_dict_list
+

@@ -168,15 +168,22 @@ exit_cmd = <command string>
 * The <command string> for the node type to drop one mode level.
 
 cmd<1-20> = <command>
+cmd_branch<1-20>_<1-20> = <command>
 * If specified, the <command> is executed in the CLI (ssh) session
 
 cmd<1-20>_mode_level = <integer level>
+cmd_branch<1-20>_<1-20>_mode_level = <integer level>
 * The <integer level> is an integer that indicates the mode level of the CLI (ssh) session after the corresponding cmd<1-20> executes successfully.
 
+cmd<1-20>_branch<1-20>_regex<1-20> = <regular expression>
+* The raw result of the cmd<1-20> is searched for the <regular expression>. If found, the cmd<1-20> is marked to execute the branch<1-20> CLI commands.
+
 cmd<1-20>_success_regex<1-20> = <regular expression>
+cmd_branch<1-20>_<1-20>_success_regex<1-20> = <regular expression>
 * The raw result of the cmd<1-20> is searched for the <regular expression>. If found, the cmd<1-20> is marked a success pending processing of the cmd<1-20>_fail_regex<1-20>.
 
 cmd<1-20>_fail_regex<1-20> = <regular expression>
+cmd_branch<1-20>_<1-20>_fail_regex<1-20> = <regular expression>
 * The raw result of the cmd<1-20> is searched for the <regular expression>. If found, the cmd<1-20> failed and the CLI (ssh) session will exit using the exit_cmd.
 * A found fail regex overrides a found success regex
 
@@ -185,18 +192,30 @@ cmd<1-20>_prompt_response_string = <response string>
 cmd<1-20>_prompt_response_mode_level = <integer>
 cmd<1-20>_prompt_override_response_string = <response string>
 cmd<1-20>_prompt_override_response_mode_level = <integer>
+cmd_branch<1-20>_<1-20>_prompt_regex = <regular expression>
+cmd_branch<1-20>_<1-20>_prompt_response_string = <response string>
+cmd_branch<1-20>_<1-20>_prompt_response_mode_level = <integer>
+cmd_branch<1-20>_<1-20>_prompt_override_response_string = <response string>
+cmd_branch<1-20>_<1-20>_prompt_override_response_mode_level = <integer>
 * If the cmd<1-20>_prompt_regex is specified, the raw result of the cmd<1-20> is searched for the <regular expression>. If found, the cmd<1-20>_prompt_response_string is sent to CLI (ssh) session to respond to the prompt and the exit_cmd and cmd<1-20>_prompt_override_response_mode_level are used to exit the CLI (ssh) session. However if the check1 input box is checked in the UI, the cmd<1-20>_prompt_override_response_string is sent as a response and the cmd<1-20> commands will continue.
 
 cmd<1-20>_cli_cmd_delay = <time in seconds>
+cmd_branch<1-20>_<1-20>_cli_cmd_delay = <time in seconds>
 * If specified, the cmd<1-20>_cli_cmd_delay will override the cli_cmd_delay in the default/cliauto.conf file.
 * cmd<1-20>_cli_cmd_delay is timeout for pexpect to wait for the next prompt
 
 cmd<1-20>_expect_prompt_regex = <regular expression>
+cmd_branch<1-20>_<1-20>_expect_prompt_regex = <regular expression>
 * If specified, the cmd<1-20>_expect_prompt_regex will override the expect_prompt_regex
 
 cmd<1-20>_no_config_diff_regex = <regular expression>
+cmd_branch<1-20>_<1-20>_no_config_diff_regex = <regular expression>
 * If specified and the regular expression is not found in output of the command, the CLI (ssh) session will be terminated by sending the exit_cmd for the current mode level.
 * This parameter was initially created for the "show config diff" command of Palo Alto firewalls
+
+cmd<1-20>_max_output_before_truncate = <integer>
+cmd_branch<1-20>_<1-20>_max_output_before_truncate = <integer>
+* If specified, the cmd<1-20>_max_output_before_truncate is the maximum characters before trunicating output of the cmd<1-20> CLI command
 
 custom_result_field<1-20> = <string>
 * If specified and the custom_result_field<1-20>_regex exists, the name of result field to index to Splunk for the value returned by the custom_result_field<1-20>_regex on the raw result

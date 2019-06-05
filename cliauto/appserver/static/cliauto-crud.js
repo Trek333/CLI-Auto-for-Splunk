@@ -527,14 +527,17 @@ require(['jquery',
             if (row[14].toLowerCase() != 'cli_custom') {
                 searchSuccessUrl = searchAllUrl + ' resultstatus="Success"';
                 searchFailUrl = searchAllUrl + ' resultstatus="Fail"';
+                searchStatsUrl = searchAllUrl + ' | table host, ip_address, sock_cnt, sock_time, login_cnt, login_time, slow1_cmd, slow1_time, slow2_cmd, slow2_time, slow3_cmd, slow3_time';
                 searchSuccessCSVUrl = searchAllUrl + ' resultstatus="Success" | table host, ip_address | outputlookup success_' + row[1].slice(0, -4) + '_' + row[0].substring(row[0].length - 4) + '.csv';
                 searchFailCSVUrl = searchAllUrl + ' resultstatus="Fail" | table host, ip_address | outputlookup fail_' + row[1].slice(0, -4) + '_' + row[0].substring(row[0].length - 4) + '.csv';
                 searchSuccessUrl = encodeURI(searchSuccessUrl);
                 searchFailUrl = encodeURI(searchFailUrl);
+                searchStatsUrl = encodeURI(searchStatsUrl);
                 searchSuccessCSVUrl = encodeURI(searchSuccessCSVUrl);
                 searchFailCSVUrl = encodeURI(searchFailCSVUrl);
                 searchSuccessatag = ' <a class="action-link external" href="' + searchSuccessUrl + '" target="_blank">Success</a>';
                 searchFailatag = ' <a class="action-link external" href="' + searchFailUrl + '" target="_blank">Fail</a>';
+                searchStatsatag = ' <a class="action-link external" href="' + searchStatsUrl + '" target="_blank">Stats</a>';
                 searchSuccesscsv = 'Create CSV: <a class="action-link external" href="' + searchSuccessCSVUrl + '" target="_blank">Success</a>';
                 searchFailcsv = ' <a class="action-link external" href="' + searchFailCSVUrl + '" target="_blank">Fail</a>';
                 JobSpanString1 = JobSpanString1 + searchSuccessatag;
@@ -553,7 +556,7 @@ require(['jquery',
                         JobSpanString2 = JobSpanString2 + ' ' + searchCustomcsv;
                     }
                 }
-                JobSpanString1 = JobSpanString1 + searchFailatag;
+                JobSpanString1 = JobSpanString1 + '<br>' + searchFailatag + searchStatsatag;
                 JobSpanString2 = JobSpanString2 + searchFailcsv;
             }
             JobSpanString = JobSpanString1 + JobSpanString2;
@@ -730,7 +733,8 @@ require(['jquery',
         var pwtype = '';
 
         var numrows = 0;
-        var searchUrl = '';
+        var searchAllUrl = '';
+        var searchAllatag = '';
         var atag = '';
         var foundBusyStatus = false;
 
@@ -748,14 +752,17 @@ require(['jquery',
             if (row.CommandType.toLowerCase() != 'cli_custom') {
                 searchSuccessUrl = searchAllUrl + ' resultstatus="Success"';
                 searchFailUrl = searchAllUrl + ' resultstatus="Fail"';
+                searchStatsUrl = searchAllUrl + ' | table host, ip_address, sock_cnt, sock_time, login_cnt, login_time, slow1_cmd, slow1_time, slow2_cmd, slow2_time, slow3_cmd, slow3_time';
                 searchSuccessCSVUrl = searchAllUrl + ' resultstatus="Success" | table host, ip_address | outputlookup success_' + row.NodeList.slice(0, -4) + '_' + row.JobId.substring(row.JobId.length - 4) + '.csv';
                 searchFailCSVUrl = searchAllUrl + ' resultstatus="Fail" | table host, ip_address | outputlookup fail_' + row.NodeList.slice(0, -4) + '_' + row.JobId.substring(row.JobId.length - 4) + '.csv';
                 searchSuccessUrl = encodeURI(searchSuccessUrl);
                 searchFailUrl = encodeURI(searchFailUrl);
+                searchStatsUrl = encodeURI(searchStatsUrl);
                 searchSuccessCSVUrl = encodeURI(searchSuccessCSVUrl);
                 searchFailCSVUrl = encodeURI(searchFailCSVUrl);
                 searchSuccessatag = ' <a class="action-link external" href="' + searchSuccessUrl + '" target="_blank">Success</a>';
                 searchFailatag = ' <a class="action-link external" href="' + searchFailUrl + '" target="_blank">Fail</a>';
+                searchStatsatag = ' <a class="action-link external" href="' + searchStatsUrl + '" target="_blank">Stats</a>';
                 searchSuccesscsv = 'Create CSV: <a class="action-link external" href="' + searchSuccessCSVUrl + '" target="_blank">Success</a>';
                 searchFailcsv = ' <a class="action-link external" href="' + searchFailCSVUrl + '" target="_blank">Fail</a>';
                 JobSpanString1 = JobSpanString1 + searchSuccessatag;
@@ -774,7 +781,7 @@ require(['jquery',
                         JobSpanString2 = JobSpanString2 + ' ' + searchCustomcsv;
                     }
                 }
-                JobSpanString1 = JobSpanString1 + searchFailatag;
+                JobSpanString1 = JobSpanString1 + '<br>' + searchFailatag + searchStatsatag;
                 JobSpanString2 = JobSpanString2 + searchFailcsv;
             }
             JobSpanString = JobSpanString1 + JobSpanString2;

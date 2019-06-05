@@ -576,7 +576,7 @@ class sshcom(object):
             logging.error('Error, parallel_ssh, icount = ' + str(icount) + ': err = ' + str(err))
             return False
 
-    def ssh_update_result(self, host_dict, result, resultraw, iteration, resultstatus, custom_result_field_list):
+    def ssh_update_result(self, host_dict, result, resultraw, iteration, resultstatus, custom_result_field_list, cmd_time_dict, login_dict):
 
         try:
             with self.lock:
@@ -590,6 +590,8 @@ class sshcom(object):
                 cur_parallel_ssh_results[record_num]['iteration'] = iteration
                 cur_parallel_ssh_results[record_num]['resultstatus'] = resultstatus
                 cur_parallel_ssh_results[record_num]['custom_result_field_list'] = custom_result_field_list
+                cur_parallel_ssh_results[record_num]['cmd_time_dict'] = cmd_time_dict
+                cur_parallel_ssh_results[record_num]['login_dict'] = login_dict
 
                 parallel_ssh_results = {}
                 parallel_ssh_results[record_num] = host_dict
@@ -598,6 +600,8 @@ class sshcom(object):
                 parallel_ssh_results[record_num]['iteration'] = iteration
                 parallel_ssh_results[record_num]['resultstatus'] = resultstatus
                 parallel_ssh_results[record_num]['custom_result_field_list'] = custom_result_field_list
+                parallel_ssh_results[record_num]['cmd_time_dict'] = cmd_time_dict
+                parallel_ssh_results[record_num]['login_dict'] = login_dict
 
                 self.cur_parallel_ssh_results[record_num] = cur_parallel_ssh_results[record_num]
                 self.parallel_ssh_results[record_num] = parallel_ssh_results[record_num]
@@ -904,6 +908,22 @@ class sshcom(object):
             # The default result is Fail
             result = 'Fail'
 
+            # Search for branch regex
+            cmd_branch_regex_list_dict = cmd_dict['cmd_branch_regex_list_dict']
+            if cmd_branch_regex_list_dict != '':
+                for branch_index in range(1, 21):
+                    try:
+                        cmd_branch_regex_list_dict['branch' + format(branch_index, '02')]
+                    except:
+                        continue
+
+                    for cmd_branch_regex in cmd_branch_regex_list_dict['branch' + format(branch_index, '02')]:
+                        logging.debug("cmd_branch_regex = " + cmd_branch_regex)
+                        logging.debug("cmd_out = " + cmd_out)
+                        if re.search(cmd_branch_regex , cmd_out):
+                            result = 'branch' + format(branch_index, '02')
+                            return ['Branch', result]
+
             # Search for success regex
             cmd_success_regex_list = cmd_dict['cmd_success_regex_list']
             for cmd_success_regex in cmd_success_regex_list:
@@ -933,7 +953,7 @@ class sshcom(object):
             logging.error('Error, process_ssh_cmd function, err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  "Error, process_ssh_cmd, err = " + str(err), "Error, process_ssh_cmd, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list)
+                str(icount), 'Fail', self.custom_result_field_list, {}, {})
             return ['Fail', 'Fail']
 
     def ssh_pexpect(self, host_dict, icount):
@@ -941,9 +961,10 @@ class sshcom(object):
         try:
             logging.debug("Starting ssh_pexpect...")
 
+            # Initialize login_dict, cmd_time_dict, record_num, resultraw, and get max_result_len
+            login_dict = {}
+            cmd_time_dict = {}
             record_num = host_dict['record_num']
-
-            # Initialize resultraw and get max_result_len
             resultraw = ""
             max_result_len = (self.objcfg.max_result_blocks * 1024)
             logging.debug("max_result_len = " + str(max_result_len))
@@ -966,7 +987,7 @@ class sshcom(object):
             pl = self.pexpect_login(host_dict, icount)
             ssh_session = pl[1]
             if pl[0] == 'Success':
-                pass
+                login_dict = pl[3]
 
             elif pl[0] == 'kex only':
 
@@ -986,7 +1007,7 @@ class sshcom(object):
                 if ucrfl[0] == False:
                     return False
 
-                sptr = self.ssh_update_result(host_dict, 'Check ssh key exchange - success', str(result), str(icount), 'Success', ucrfl[1])
+                sptr = self.ssh_update_result(host_dict, 'Check ssh key exchange - success', str(result), str(icount), 'Success', ucrfl[1], {}, pl[3])
                 logging.debug("Exiting ssh_pexpect...")
                 return True
 
@@ -996,16 +1017,6 @@ class sshcom(object):
             # Set echo false for ssh_session
             ssh_session.setecho(False)
 
-            # Get the cmd_dict_list for the cmdtpye
-            #mode_level = 0
-            #cmd_dict_list = []
-            #cmdtype_dict_current = {}
-            #for cmdtype_dict in self.objcfg.cmdtype_dict_list:
-                #if self.fargs['cmdtype'].lower() == cmdtype_dict['cmdtype'].lower():
-                    #cmdtype_dict_current = cmdtype_dict
-                    #cmd_dict_list = cmdtype_dict_current['cmd_dict_list']
-                    #break
-
             # Set the default expect prompt
             expect_prompt_regex = cmdtype_dict_current['expect_prompt_regex']
             ssh_session.PROMPT = expect_prompt_regex
@@ -1013,11 +1024,23 @@ class sshcom(object):
             # Initialize execute_exit_cmds_flag
             execute_exit_cmds_flag = False
 
+            # Initialize current_branch for main branch
+            current_branch = ''
+
+            # Initial cmd_max_output_before_truncate
+            cmd_max_output_before_truncate = None
+
             # Loop through ssh_cmds
             for cmd_dict in cmd_dict_list:
 
+                # Continue loop if no cmd for the current branch found in current dictionary
+                try:
+                    cmd_dict['cmd' + current_branch]
+                except:
+                    continue 
+
                 # Get cmd and add user input to cmd
-                cmd = cmd_dict['cmd']
+                cmd = cmd_dict['cmd' + current_branch]
                 cmd = self.add_user_input(cmd)
 
                 # Set the default expect prompt
@@ -1030,6 +1053,13 @@ class sshcom(object):
 
                 except:
                     cli_cmd_delay = self.objcfg.cli_cmd_delay
+
+                # If cmd_max_output_before_truncate exists then truncate ssh_cmd output
+                try:
+                    cmd_max_output_before_truncate = cmd_dict['cmd_max_output_before_truncate']
+
+                except:
+                    cmd_max_output_before_truncate = None
 
                 # If it exists, set the expect prompt for the current ssh_cmd
                 try:
@@ -1046,24 +1076,26 @@ class sshcom(object):
                 if self.fargs['cmdtype'].lower() == 'cli_custom':
                     cmd_list = cmd.split("@cmd_del@")
                     for cmditem in cmd_list:
-                        esc = self.pexpect_ssh_cmd('custom', cmditem, cli_cmd_delay, ssh_session, host_dict, icount)
+                        esc = self.pexpect_ssh_cmd('custom', cmditem, cmditem, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
                         if esc[0] != 'Success':
                             return False
                         esc[2] = esc[2].replace('\n',output_line_delimiter)
                         esc[2] = esc[2].replace('\r',output_line_delimiter)
                         resultraw += esc[2]
+                        cmd_time_dict = self.merge_two_dicts(cmd_time_dict, esc[3])
                         if esc[1]:
                             break
                     break
 
                 # Execute conf ssh_command
-                esc = self.pexpect_ssh_cmd('conf', cmd, cli_cmd_delay, ssh_session, host_dict, icount)
+                esc = self.pexpect_ssh_cmd('conf', cmd, cmd_dict['cmd' + current_branch], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
                 if esc[0] != 'Success':
                     return False
                 esc[2] = esc[2].replace('\n',output_line_delimiter)
                 esc[2] = esc[2].replace('\r',output_line_delimiter)
                 result_ssh_cmd = esc[2]
                 resultraw += result_ssh_cmd
+                cmd_time_dict = self.merge_two_dicts(cmd_time_dict, esc[3])
                 if esc[1]:
                     execute_exit_cmds_flag = True
                     break
@@ -1088,15 +1120,6 @@ class sshcom(object):
                     execute_exit_cmds_flag = True
                     break
 
-                # Process cmd_out against cmd_success_regex_list
-                cmd_out = esc[2] + cfp[3]
-                psc = self.process_ssh_cmd(cmd_out, cmd_dict, host_dict, icount)
-                if psc[0] != 'Success':
-                    return False
-                if psc[1] != 'Success':
-                    execute_exit_cmds_flag = True
-                    break
-
                 # Try to get mode_level
                 try:
                     # Get mode_level variable for ssh_cmd
@@ -1110,17 +1133,31 @@ class sshcom(object):
                 # this should not never happen for small length ouput from command
                 if len(resultraw) > max_result_len:
                     execute_exit_cmds_flag = True
-
-                # If execute_exit_cmds_flag is true then stop executing commands
-                if execute_exit_cmds_flag:
                     break
+
+                # Process cmd_out against branch, success, and failure ssh_cmd regexes
+                cmd_out = esc[2] + cfp[3]
+                psc = self.process_ssh_cmd(cmd_out, cmd_dict, host_dict, icount)
+                if psc[0] == 'Branch':
+                    logging.debug('Branching cmds to ' + psc[1])
+                    current_branch = '_' + psc[1]
+                elif psc[0] == 'Success':
+                    if psc[1] != 'Success':
+                        execute_exit_cmds_flag = True
+                        break
+                else:
+                    return False
+
+            # Set cli_cmd_delay to global value and re-initialize cmd_max_output_before_truncate
+            cli_cmd_delay = self.objcfg.cli_cmd_delay
+            cmd_max_output_before_truncate = None
 
             # If execute_exit_cmds_flag is True then exit ssh session due to conf ssh_cmd or prompt ssh_cmd failure
             if execute_exit_cmds_flag:
                 while mode_level > -1:
 
                     logging.info('mode_level = ' + str(mode_level) + ' , exiting ssh session...')
-                    esc = self.pexpect_ssh_cmd('execute_exit_cmds_flag', cmdtype_dict_current['exit_cmd'], cli_cmd_delay, ssh_session, host_dict, icount)
+                    esc = self.pexpect_ssh_cmd('execute_exit_cmds_flag', cmdtype_dict_current['exit_cmd'], cmdtype_dict_current['exit_cmd'], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
                     if esc[0] != 'Success':
                         return False
 
@@ -1130,6 +1167,7 @@ class sshcom(object):
                     esc[2] = esc[2].replace('\r',output_line_delimiter)
 
                     resultraw += esc[2]
+                    cmd_time_dict = self.merge_two_dicts(cmd_time_dict, esc[3])
 
             # Eradicate resultraw
             result = self.eradicate_string(resultraw)
@@ -1156,7 +1194,7 @@ class sshcom(object):
             # Remove output_line_delimiter from result
             result = result.replace(output_line_delimiter,'')
 
-            sptr = self.ssh_update_result(host_dict,  pr[2], str(result), str(icount), pr[1], ucrfl[1])
+            sptr = self.ssh_update_result(host_dict,  pr[2], str(result), str(icount), pr[1], ucrfl[1], cmd_time_dict, login_dict)
             logging.debug("Exiting ssh_pexpect...")
 
             return True
@@ -1165,7 +1203,7 @@ class sshcom(object):
 
             logging.error('Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
-            sptr = self.ssh_update_result(host_dict,  'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), 'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list)
+            sptr = self.ssh_update_result(host_dict,  'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), 'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
             ssh_session.close()
             return False
 
@@ -1197,7 +1235,7 @@ class sshcom(object):
             logging.error('Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), \
-                'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list)
+                'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
             return [False, custom_result_field_list]
 
     def check_socket(self, host, port, socketretries, sockettimeout):
@@ -1229,6 +1267,12 @@ class sshcom(object):
         try:  
 
             ssh_session = None
+            login_dict = {}
+            login_epoch_previous = time.time()
+            login_socket_check_time = 0.0
+            login_socket_check_count = 0
+            login_time = 0.0
+            connect_count = 1
             record_num = host_dict['record_num']
             host = host_dict['ip_address']
             port = self.objcfg.sshport
@@ -1263,7 +1307,13 @@ class sshcom(object):
             else:
                 # If port is open then logon else log the port is not open for host and return
                 cs = self.check_socket(host, port, socketretries, sockettimeout)
-                logging.info('socket_count=' + str(cs[1]))
+
+                login_epoch_now = time.time()
+                login_socket_check_time = login_epoch_now - login_epoch_previous
+                login_socket_check_count = cs[1]
+
+                logging.info('socket_count=' + str(login_socket_check_count))
+
                 if cs[0] == 'Success':
 
                     # Sleep for 1 second after successful socket check to allow time for disconnection to prevent max connections to ssh server
@@ -1272,19 +1322,20 @@ class sshcom(object):
 
                     if self.fargs['cmdtype'].lower() == 'cli_check_port':
                         sptr = self.ssh_update_result(host_dict, "Port " + str(port) + " on host open", "Port " + str(port) + " on " + host + " open", \
-                            str(icount), 'Success', self.custom_result_field_list)
-                        return ['Abort Port Check Only', ssh_session, '']
+                            str(icount), 'Success', self.custom_result_field_list, {}, \
+                            {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count})
+                        return ['Abort Port Check Only', ssh_session, '', {}]
                 else:
                     sptr = self.ssh_update_result(host_dict, "Port " + str(port) + " on host not open", \
-                        "Port " + str(port) + " on " + host + " not open after " + str(cs[1]) + " socket connection attempt(s).", \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                        "Port " + str(port) + " on " + host + " not open after " + str(login_socket_check_count) + " socket connection attempt(s).", \
+                        str(icount), 'Fail', self.custom_result_field_list, {}, \
+                        {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count})
+                    return ['Fail', ssh_session, '', {}]
 
             # Try to connect to node
-            connect_count = 0
             while True:
 
-                logging.debug("Trying to connect to " + host +" (" + str(connect_count) + "/" + str(connect_retries) + ")")
+                logging.debug("Trying to connect to " + host +" (" + str(connect_count) + "/" + str(connect_retries + 1) + ")")
 
                 try:
                     ssh_session = pxssh_cliauto(options=options)
@@ -1295,7 +1346,8 @@ class sshcom(object):
                             verbose_level=kex_verbose_level, check_kex_only=True, \
                             kex_filter_regex=kex_filter_regex)
                         logging.debug("ssh key exchange only completed for " + host)
-                        return ['kex only', ssh_session, kex_output_filtered]
+                        login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
+                        return ['kex only', ssh_session, kex_output_filtered, login_dict]
                         break
                     else:
                         ssh_session.login(host, username, password, login_timeout=timeout, port=port, cipher=cipher, auto_prompt_reset=False, \
@@ -1304,58 +1356,69 @@ class sshcom(object):
                         break
                 except ExceptionPxsshAccessDenied:
                     logging.debug("Authentication failed when connecting to " + host)
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Authentication failed when connecting to host", "Authentication failed when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshLoginTimeout:
                     logging.debug("Login timeout when connecting to " + host)
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Login timeout when connecting to host", "Login timeout when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshHostKeyChanged:
                     logging.debug("WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR " + host + " SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.")
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  \
                         "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR HOST SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.", \
                         "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR " + host + " SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.", \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshMaxHostsExceeded:
                     logging.debug("Max # of hosts exceeded when connecting to " + host)
-                    sptr = self.ssh_update_result(host_dict,  "Max # of hosts exceeded when connecting to host", "Max # of hosts exceeded when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
+                    sptr = self.ssh_update_result(host_dict, \
+                        "Max # of hosts exceeded when connecting to host", "Max # of hosts exceeded when connecting to " + host, \
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshNoCipherFound:
                     logging.debug("No matching cipher found when connecting to " + host)
-                    sptr = self.ssh_update_result(host_dict,  "No matching cipher found when connecting to host", "No matching cipher found when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
+                    sptr = self.ssh_update_result(host_dict, \
+                        "No matching cipher found when connecting to host", "No matching cipher found when connecting to " + host, \
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
                 except Exception as err:
                     ssh_session.close()
-                    logging.debug("Could not SSH to " + host + ", starting " + str(connect_retries) + " retries, err = " + str(err))
+                    logging.debug("Could not SSH to " + host + " of " + str(connect_count) + "/" + str(connect_retries) + " attempt(s), err = " + str(err))
                     time.sleep(1)
-                    connect_count += 1
 
                 # If we could not connect after num_of_retries, log results and return
                 if connect_count > connect_retries:
                     logging.debug("Could not connect to " + host + " after " + str(connect_count) + " connection attempt(s).")
+                    login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Could not connect to host", \
                         "Could not connect to " + host + " after " + str(connect_count) + " connection attempt(s).", \
-                        str(icount), 'Fail', self.custom_result_field_list)
-                    return ['Fail', ssh_session, '']
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                    return ['Fail', ssh_session, '', {}]
 
-            return ['Success', ssh_session, '']
+                connect_count += 1
+
+            login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
+            return ['Success', ssh_session, '', login_dict]
 
         except Exception as err:
             logging.error('Error, pexpect_login, icount = ' + str(icount) + ': err = ' + str(err))
             sptr = self.ssh_update_result(host_dict,  "Error, pexpect_login, err = " + str(err), "Error, pexpect_login, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list)
+                str(icount), 'Fail', self.custom_result_field_list, {}, {})
             return ['Fail', ssh_session, '']
 
-    def pexpect_ssh_cmd(self, ssh_cmdtype, ssh_cmd, cli_cmd_delay, ssh_session, host_dict, icount):
+    def pexpect_ssh_cmd(self, ssh_cmdtype, ssh_cmd, ssh_cmd_raw, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount):
 
         try:  
 
             cmd_out = ''
+            elasped_time = 0.0
             ssh_cmd_log = self.eradicate_string(ssh_cmd)
             logging.debug("Entering pexpect_ssh_cmd..., ssh_cmd_log = " + str(ssh_cmd_log))
             execute_exit_cmds_flag = False
@@ -1364,6 +1427,7 @@ class sshcom(object):
             ssh_session.sendline(str(ssh_cmd))
 
             # Expect the prompt, EOF, or timeout
+            epoch_previous = time.time()
             try:
                 ssh_session.prompt(timeout=cli_cmd_delay)
             except pexpect.EOF:
@@ -1371,10 +1435,14 @@ class sshcom(object):
             except Exception as err:
                 logging.error('Error, pexpect_ssh_cmd function, ssh_cmdtype = ' + str(ssh_cmdtype) + ', err = ' + str(err))
                 logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+                epoch_now = time.time()
+                elasped_time = epoch_now - epoch_previous
                 sptr = self.ssh_update_result(host_dict,  'Error, pexpect_ssh_cmd function', \
                     'Error, pexpect_ssh_cmd function, icount = ' + str(icount) + ', ssh_cmdtype = ' + str(ssh_cmdtype) + ', err = ' + str(err), \
-                    str(icount), 'Fail', self.custom_result_field_list)
-                return ['Error', True, cmd_out]
+                    str(icount), 'Fail', self.custom_result_field_list, {ssh_cmd_raw : elasped_time}, {})
+                return ['Error', True, cmd_out, {ssh_cmd_raw : elasped_time}]
+            epoch_now = time.time()
+            elasped_time = epoch_now - epoch_previous
 
             # Try to get the ssh session text
             before = ''
@@ -1394,7 +1462,11 @@ class sshcom(object):
             cmd_out = before + after
             cmd_out = self.eradicate_string(cmd_out)
 
-            return ['Success', execute_exit_cmds_flag, cmd_out]
+            # If a cmd_max_output_before_truncate value exists truncate cmd_out string
+            if cmd_max_output_before_truncate != None:
+                cmd_out = cmd_out[:cmd_max_output_before_truncate] + 'output truncated by cliauto'
+
+            return ['Success', execute_exit_cmds_flag, cmd_out, {ssh_cmd_raw : elasped_time}]
 
         except Exception as err:
 
@@ -1402,14 +1474,15 @@ class sshcom(object):
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  'Error, pexpect_ssh_cmd function', \
                 'Error, pexpect_ssh_cmd function, icount = ' + str(icount) + ', ssh_cmdtype = ' + str(ssh_cmdtype) + ', err = ' + str(err), \
-                 str(icount), 'Fail', self.custom_result_field_list)
-            return ['Error', True, cmd_out]
+                 str(icount), 'Fail', self.custom_result_field_list, {}, {})
+            return ['Error', True, cmd_out, {ssh_cmd_raw : elasped_time}]
 
     def check_for_prompt_pexpect(self, cmd_in, cli_cmd_delay, cmd_dict, mode_level, ssh_session, host_dict, icount):
 
         try:  
 
             cmd_out = ''
+            cmd_time_dict = {}
             logging.debug('Entering check_for_prompt_pexpect...')
             execute_exit_cmds_flag = False
             # Initialize prompt variables
@@ -1444,10 +1517,11 @@ class sshcom(object):
                         cmd_prompt_response_mode_level = cmd_prompt_override_response_mode_level
 
                     # Execute ssh_command for Prompt
-                    esc = self.pexpect_ssh_cmd('prompt', cmd_prompt_response_string, cli_cmd_delay, ssh_session, host_dict, icount)
+                    esc = self.pexpect_ssh_cmd('prompt', cmd_prompt_response_string, cmd_prompt_response_string, cli_cmd_delay, None, ssh_session, host_dict, icount)
                     cmd_out = esc[2]
+                    cmd_time_dict = esc[3]
                     if esc[0] != 'Success':
-                        return ['Fail', True, mode_level, cmd_out]
+                        return ['Fail', True, mode_level, cmd_out, cmd_time_dict]
 
                     if esc[1]:
                         execute_exit_cmds_flag = True
@@ -1460,7 +1534,7 @@ class sshcom(object):
         except Exception as err:
             logging.error('Error, check_for_prompt_pexpect, icount = ' + str(icount) + ': err = ' + str(err))
             sptr = self.ssh_update_result(host_dict,  "Error, check_for_prompt_pexpect, err = " + str(err), \
-                "Error, check_for_prompt_pexpect, err = " + str(err), str(icount), 'Fail', self.custom_result_field_list)
+                "Error, check_for_prompt_pexpect, err = " + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
             return ['Fail', False, mode_level, cmd_out]
 
     def check_for_config_diff(self, cmd_in, cmd_dict, host_dict, icount):
@@ -1513,5 +1587,19 @@ class sshcom(object):
             logging.error('Error, check_for_config_diff, icount = ' + str(icount) + ': err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  "Error, check_for_config_diff, err = " + str(err), "Error, check_for_config_diff, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list)
+                str(icount), 'Fail', self.custom_result_field_list, {}, {})
             return ['Fail', False, False]
+
+    def merge_two_dicts(self, x, y):
+        # Given two dicts, merge them into a new dict as a shallow copy."""
+        z = x.copy()
+        z.update(y)
+        return z
+
+    def update_login_dict(self, login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count):
+        login_epoch_now = time.time()
+        login_time = login_epoch_now - login_epoch_previous
+        login_dict = {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count, \
+            'login_time' : login_time, 'login_connect_count' : connect_count}
+        return login_dict
+
