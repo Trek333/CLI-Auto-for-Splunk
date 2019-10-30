@@ -3,4 +3,5 @@
   <view name="search"/>
   <view name="help" />
   <view name="cli_auto_tours"/>
+  <view name="cli_auto_about"/>
 </nav>

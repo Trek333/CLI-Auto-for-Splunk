@@ -23,7 +23,7 @@ require(['jquery',
         'splunkjs/mvc/messages',
         'splunkjs/mvc/searchmanager',
         'splunkjs/mvc/multidropdownview',
-        'splunkjs/mvc/dropdownview',        
+        'splunkjs/mvc/dropdownview',
         '/static/app/cliauto/Modal.js',
         'splunkjs/mvc/simpleform/input/dropdown',
         'splunkjs/mvc/simplexml/ready!'],
@@ -45,10 +45,10 @@ require(['jquery',
     }
 
     function anonCallback(callback=function(){}, callbackArgs=null) {
-        debugger;
+        // debugger;
         if(callbackArgs) {
             callback.apply(this, callbackArgs);
-        } else { 
+        } else {
             callback();
         }
     }
@@ -64,7 +64,7 @@ require(['jquery',
         var deferred = $.Deferred();
         var fulfilled = 0, length = array.length;
         var results = [];
-    
+
         if (length === 0) {
             deferred.resolve(results);
         } else {
@@ -78,7 +78,7 @@ require(['jquery',
                 });
             });
         }
-    
+
         return deferred.promise();
     };
 
@@ -164,22 +164,22 @@ require(['jquery',
                     keyboard: false,
                     destroyOnHide: true,
                     type: 'wide'
-        }); 
+        });
 
         // Add content
         myModal.body.append($(body));
-    
+
         // Add footer
         myModal.footer.append($('<button>').attr({
             type: 'button',
             'data-dismiss': 'modal'
         })
         .addClass('btn btn-primary').text(buttonText).on('click', function () {
-                anonCallback(callback, callbackArgs); 
+                anonCallback(callback, callbackArgs);
         }))
 
-        // Launch it!  
-        myModal.show(); 
+        // Launch it!
+        myModal.show();
     }
 
     // Clear click listener and register with new callback
@@ -190,7 +190,7 @@ require(['jquery',
                 event.preventDefault();
                 anonCallback(callback, callbackArgs);
             });
-            return;    
+            return;
         }
 
         // Unregister click callback
@@ -215,7 +215,7 @@ require(['jquery',
         service.request(
             "configs/conf-cliauto_cmds",
             "GET",
-            null,
+            {count : "0"}, // replaced null with dictionary key/value pair count="0" (get all available entries) due to default max = 30 entries for response - see https://docs.splunk.com/Documentation/Splunk/7.3.2/RESTREF/RESTprolog#Pagination_and_filtering_parameters
             null,
             '',
             {"Content-Type": "application/json"},
@@ -270,7 +270,7 @@ require(['jquery',
                 $("#ScriptCommand-dropdown").append('<option value="'+ui_response.data.entry[i].name+'">'+ui_response.data.entry[i].content.kv_cmd_string+'</option>');
             }
         }
-        
+
 
 
     }
@@ -332,11 +332,11 @@ require(['jquery',
         $('#PW2TextInput').prop('title', '');
         $('#PW3TextInput').prop('title', '');
         $('#Drop1').prop('title', '');
-        
+
         var arrayLength = ui_response.data.entry.length;
         for (var i = 0; i < arrayLength; i++) {
             if (ui_response.data.entry[i].name == $("#ScriptCommand-dropdown").val()) {
-                
+
                 if (ui_response.data.entry[i].content.ui_nodelist_title != undefined) {
                     $('#NodeList-dropdown').prop('title', ui_response.data.entry[i].content.ui_nodelist_title);
                 }
@@ -430,7 +430,7 @@ require(['jquery',
                         $("#Drop1").append('<option value="'+drop1_options_array[i2]+'">'+drop1_options_array[i2]+'</option>');
                     }
                 break;
-                    
+
                 }
 
             }
@@ -506,6 +506,13 @@ require(['jquery',
         );
     }
 
+    // Pad number with leading zeros
+    function pad(num, size) {
+        var s = num+"";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
+
     function updateTable(data) {
         var d = new Date();
         var n = d.getTime();
@@ -514,6 +521,7 @@ require(['jquery',
         var searchAllatag = '';
         var searchSuccessatag = '';
         var JobSpanString = '';
+
         _.each(data, function(row, i) {
             searchAllUrl = '../../app/cliauto/search?q=search'
             + ' index="' + row[11] + '"'
@@ -522,22 +530,67 @@ require(['jquery',
             + ' jobid="' + row[0] + '"'
             + ' earliest=1 latest=now';
             searchAllatag = '<a class="action-link external" href="' + encodeURI(searchAllUrl) + '" target="_blank">All</a>';
-            JobSpanString1 = row[0] + '<br>'+ searchAllatag
-            JobSpanString2 = '<br>'
+            JobSpanString1 = row[0] + '<br>'+ searchAllatag;
+            JobSpanString2 = '<br>';
+
+            var output_data_stats_search_name01 = "";
+            var output_data_stats_search01 = "";
+            var output_data_stats_search_name02 = "";
+            var output_data_stats_search02 = "";
+            var output_data_stats_search_name03 = "";
+            var output_data_stats_search03 = "";
+            var output_data_stats_search_name04 = "";
+            var output_data_stats_search04 = "";
+
             if (row[14].toLowerCase() != 'cli_custom') {
+
+                var arrayLength3 = ui_response.data.entry.length;
+                for (var i3 = 0; i3 < arrayLength3; i3++) {
+                    if (ui_response.data.entry[i3].name == row[14]) {
+                        output_data_stats_search_name01 = ui_response.data.entry[i3].content.output_data_stats_search_name01;
+                        output_data_stats_search01 = ui_response.data.entry[i3].content.output_data_stats_search01;
+                        output_data_stats_search_name02 = ui_response.data.entry[i3].content.output_data_stats_search_name02;
+                        output_data_stats_search02 = ui_response.data.entry[i3].content.output_data_stats_search02;
+
+                        output_data_stats_search_name03 = ui_response.data.entry[i3].content.output_data_stats_search_name03;
+                        output_data_stats_search03 = ui_response.data.entry[i3].content.output_data_stats_search03;
+                        output_data_stats_search_name04 = ui_response.data.entry[i3].content.output_data_stats_search_name04;
+                        output_data_stats_search04 = ui_response.data.entry[i3].content.output_data_stats_search04;
+                        break;
+                        }
+                }
+
                 searchSuccessUrl = searchAllUrl + ' resultstatus="Success"';
                 searchFailUrl = searchAllUrl + ' resultstatus="Fail"';
                 searchStatsUrl = searchAllUrl + ' | table host, ip_address, sock_cnt, sock_time, login_cnt, login_time, slow1_cmd, slow1_time, slow2_cmd, slow2_time, slow3_cmd, slow3_time';
+
+                searchOutputStatsUrl01 = searchAllUrl + ' ' + output_data_stats_search01;
+                searchOutputStatsUrl02 = searchAllUrl + ' ' + output_data_stats_search02;
+                searchOutputStatsUrl03 = searchAllUrl + ' ' + output_data_stats_search03;
+                searchOutputStatsUrl04 = searchAllUrl + ' ' + output_data_stats_search04;
+
                 searchSuccessCSVUrl = searchAllUrl + ' resultstatus="Success" | table host, ip_address | outputlookup success_' + row[1].slice(0, -4) + '_' + row[0].substring(row[0].length - 4) + '.csv';
                 searchFailCSVUrl = searchAllUrl + ' resultstatus="Fail" | table host, ip_address | outputlookup fail_' + row[1].slice(0, -4) + '_' + row[0].substring(row[0].length - 4) + '.csv';
                 searchSuccessUrl = encodeURI(searchSuccessUrl);
                 searchFailUrl = encodeURI(searchFailUrl);
                 searchStatsUrl = encodeURI(searchStatsUrl);
+
+                searchOutputStatsUrl01 = encodeURI(searchOutputStatsUrl01);
+                searchOutputStatsUrl02 = encodeURI(searchOutputStatsUrl02);
+                searchOutputStatsUrl03 = encodeURI(searchOutputStatsUrl03);
+                searchOutputStatsUrl04 = encodeURI(searchOutputStatsUrl04);
+
                 searchSuccessCSVUrl = encodeURI(searchSuccessCSVUrl);
                 searchFailCSVUrl = encodeURI(searchFailCSVUrl);
                 searchSuccessatag = ' <a class="action-link external" href="' + searchSuccessUrl + '" target="_blank">Success</a>';
                 searchFailatag = ' <a class="action-link external" href="' + searchFailUrl + '" target="_blank">Fail</a>';
                 searchStatsatag = ' <a class="action-link external" href="' + searchStatsUrl + '" target="_blank">Stats</a>';
+
+                searchOutputStatsatag01 = '<a class="action-link external" href="' + searchOutputStatsUrl01 + '" target="_blank">' + String(output_data_stats_search_name01) + '</a>';
+                searchOutputStatsatag02 = '<a class="action-link external" href="' + searchOutputStatsUrl02 + '" target="_blank">' + String(output_data_stats_search_name02) + '</a>';
+                searchOutputStatsatag03 = '<a class="action-link external" href="' + searchOutputStatsUrl03 + '" target="_blank">' + String(output_data_stats_search_name03) + '</a>';
+                searchOutputStatsatag04 = '<a class="action-link external" href="' + searchOutputStatsUrl04 + '" target="_blank">' + String(output_data_stats_search_name04) + '</a>';
+
                 searchSuccesscsv = 'Create CSV: <a class="action-link external" href="' + searchSuccessCSVUrl + '" target="_blank">Success</a>';
                 searchFailcsv = ' <a class="action-link external" href="' + searchFailCSVUrl + '" target="_blank">Fail</a>';
                 JobSpanString1 = JobSpanString1 + searchSuccessatag;
@@ -561,12 +614,41 @@ require(['jquery',
             }
             JobSpanString = JobSpanString1 + JobSpanString2;
 
+            CommandSpanString = row[5] + '<br>';
+            var rec_css = 0;
+            if (output_data_stats_search01 != "" && output_data_stats_search01 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag01;
+                rec_css = rec_css + 1;
+            }
+            if (output_data_stats_search02 != "" && output_data_stats_search02 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag02;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
+
+            if (output_data_stats_search03 != "" && output_data_stats_search03 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag03;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
+            if (output_data_stats_search04 != "" && output_data_stats_search04 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag04;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
+
             $('.JobId'+ i).html(JobSpanString);
             $('.NodeList'+ i).html(row[1]);
             $('.Status'+ i).html(row[2]);
             $('.PID'+ i).html(row[3]);
             $('.Timestamp'+ i).html(row[4]);
-            $('.Command'+ i).html(row[5]);
+            $('.Command'+ i).html(CommandSpanString);
             $('.StartTime'+ i).html(row[6]);
             $('.EndTime'+ i).html(row[7]);
             $('.ScriptUser'+ i).html(row[8]);
@@ -691,7 +773,7 @@ require(['jquery',
 
         // <p style="color:red;"><br><b>&nbsp;&nbsp;&nbsp;Warning: This option will cause editing user(s) to lose pending configuration changes</b></p> \
         var tdHtml = "";
-                             //class="table table-striped table-hover" 
+                             //class="table table-striped table-hover"
         var header = '  <table id="rest-command-table" \
                              class="table table-striped table-condensed" \
                              data-toolbar="#toolbar" \
@@ -749,20 +831,65 @@ require(['jquery',
             searchAllatag = '<a class="action-link external" href="' + encodeURI(searchAllUrl) + '" target="_blank">All</a>';
             JobSpanString1 = row.JobId + '<br>'+ searchAllatag
             JobSpanString2 = '<br>'
+
+            var output_data_stats_search_name01 = "";
+            var output_data_stats_search01 = "";
+            var output_data_stats_search_name02 = "";
+            var output_data_stats_search02 = "";
+            var output_data_stats_search_name03 = "";
+            var output_data_stats_search03 = "";
+            var output_data_stats_search_name04 = "";
+            var output_data_stats_search04 = "";
+
             if (row.CommandType.toLowerCase() != 'cli_custom') {
+
+                var arrayLength3 = ui_response.data.entry.length;
+                for (var i3 = 0; i3 < arrayLength3; i3++) {
+                    if (ui_response.data.entry[i3].name == row.CommandType) {
+                        output_data_stats_search_name01 = ui_response.data.entry[i3].content.output_data_stats_search_name01;
+                        output_data_stats_search01 = ui_response.data.entry[i3].content.output_data_stats_search01;
+                        output_data_stats_search_name02 = ui_response.data.entry[i3].content.output_data_stats_search_name02;
+                        output_data_stats_search02 = ui_response.data.entry[i3].content.output_data_stats_search02;
+
+                        output_data_stats_search_name03 = ui_response.data.entry[i3].content.output_data_stats_search_name03;
+                        output_data_stats_search03 = ui_response.data.entry[i3].content.output_data_stats_search03;
+                        output_data_stats_search_name04 = ui_response.data.entry[i3].content.output_data_stats_search_name04;
+                        output_data_stats_search04 = ui_response.data.entry[i3].content.output_data_stats_search04;
+                        break;
+                        }
+                }
+
                 searchSuccessUrl = searchAllUrl + ' resultstatus="Success"';
                 searchFailUrl = searchAllUrl + ' resultstatus="Fail"';
                 searchStatsUrl = searchAllUrl + ' | table host, ip_address, sock_cnt, sock_time, login_cnt, login_time, slow1_cmd, slow1_time, slow2_cmd, slow2_time, slow3_cmd, slow3_time';
+
+                searchOutputStatsUrl01 = searchAllUrl + ' ' + output_data_stats_search01;
+                searchOutputStatsUrl02 = searchAllUrl + ' ' + output_data_stats_search02;
+                searchOutputStatsUrl03 = searchAllUrl + ' ' + output_data_stats_search03;
+                searchOutputStatsUrl04 = searchAllUrl + ' ' + output_data_stats_search04;
+
                 searchSuccessCSVUrl = searchAllUrl + ' resultstatus="Success" | table host, ip_address | outputlookup success_' + row.NodeList.slice(0, -4) + '_' + row.JobId.substring(row.JobId.length - 4) + '.csv';
                 searchFailCSVUrl = searchAllUrl + ' resultstatus="Fail" | table host, ip_address | outputlookup fail_' + row.NodeList.slice(0, -4) + '_' + row.JobId.substring(row.JobId.length - 4) + '.csv';
                 searchSuccessUrl = encodeURI(searchSuccessUrl);
                 searchFailUrl = encodeURI(searchFailUrl);
                 searchStatsUrl = encodeURI(searchStatsUrl);
+
+                searchOutputStatsUrl01 = encodeURI(searchOutputStatsUrl01);
+                searchOutputStatsUrl02 = encodeURI(searchOutputStatsUrl02);
+                searchOutputStatsUrl03 = encodeURI(searchOutputStatsUrl03);
+                searchOutputStatsUrl04 = encodeURI(searchOutputStatsUrl04);
+
                 searchSuccessCSVUrl = encodeURI(searchSuccessCSVUrl);
                 searchFailCSVUrl = encodeURI(searchFailCSVUrl);
                 searchSuccessatag = ' <a class="action-link external" href="' + searchSuccessUrl + '" target="_blank">Success</a>';
                 searchFailatag = ' <a class="action-link external" href="' + searchFailUrl + '" target="_blank">Fail</a>';
                 searchStatsatag = ' <a class="action-link external" href="' + searchStatsUrl + '" target="_blank">Stats</a>';
+
+                searchOutputStatsatag01 = '<a class="action-link external" href="' + searchOutputStatsUrl01 + '" target="_blank">' + String(output_data_stats_search_name01) + '</a>';
+                searchOutputStatsatag02 = '<a class="action-link external" href="' + searchOutputStatsUrl02 + '" target="_blank">' + String(output_data_stats_search_name02) + '</a>';
+                searchOutputStatsatag03 = '<a class="action-link external" href="' + searchOutputStatsUrl03 + '" target="_blank">' + String(output_data_stats_search_name03) + '</a>';
+                searchOutputStatsatag04 = '<a class="action-link external" href="' + searchOutputStatsUrl04 + '" target="_blank">' + String(output_data_stats_search_name04) + '</a>';
+
                 searchSuccesscsv = 'Create CSV: <a class="action-link external" href="' + searchSuccessCSVUrl + '" target="_blank">Success</a>';
                 searchFailcsv = ' <a class="action-link external" href="' + searchFailCSVUrl + '" target="_blank">Fail</a>';
                 JobSpanString1 = JobSpanString1 + searchSuccessatag;
@@ -785,6 +912,35 @@ require(['jquery',
                 JobSpanString2 = JobSpanString2 + searchFailcsv;
             }
             JobSpanString = JobSpanString1 + JobSpanString2;
+            //debugger;
+            CommandSpanString = row.Command + '<br>';
+            var rec_css = 0;
+            if (output_data_stats_search01 != "" && output_data_stats_search01 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag01;
+                rec_css = rec_css + 1;
+            }
+            if (output_data_stats_search02 != "" && output_data_stats_search02 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag02;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
+
+            if (output_data_stats_search03 != "" && output_data_stats_search03 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag03;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
+            if (output_data_stats_search04 != "" && output_data_stats_search04 != undefined) {
+                CommandSpanString = CommandSpanString + ' ' + searchOutputStatsatag04;
+                rec_css = rec_css + 1;
+                if (rec_css % 2 > 0) {
+                    CommandSpanString = CommandSpanString + '<br>';
+                }
+            }
 
             tdHtml += '<tr class="Row' + i +'">\
                          <td><span style="font-size: 10px;" class="JobId' + i +'">' + JobSpanString + '</span>\
@@ -792,7 +948,7 @@ require(['jquery',
                          <td><span style="font-size: 10px;" class="Status' + i +'">' + row.Status + '</span></td>\
                          <td><span style="font-size: 10px;" class="PID' + i +'">' + row.PID + '</span></td>\
                          <td><span style="font-size: 10px;" class="Timestamp' + i +'">' + row.Timestamp + '</span></td>\
-                         <td><span style="font-size: 10px;" class="Command' + i +'">' + row.Command + '</span></td>\
+                         <td><span style="font-size: 10px;" class="Command' + i +'">' + CommandSpanString + '</span></td>\
                          <td><span style="font-size: 10px;" class="StartTime' + i +'">' + row.StartTime + '</span></td>\
                          <td><span style="font-size: 10px;" class="EndTime' + i +'">' + row.EndTime + '</span></td>\
                          <td><span style="font-size: 10px;" class="ScriptUser' + i +'">' + row.ScriptUser + '</span></td>\
@@ -803,7 +959,7 @@ require(['jquery',
                 foundBusyStatus = true;
             }
         });
-        
+
         for (i = numrows; i < NUM_JOBS; i++) {
             tdHtml += '<tr class="Row' + i +'">\
                          <td><span style="font-size: 10px;" class="JobId' + i +'"></span></td>\
@@ -822,7 +978,7 @@ require(['jquery',
 
         tdHtml += "</tbody></table></div>";
         html += tdHtml;
-        
+
         // Render table
         $(tableDiv).append(html);
 
@@ -854,7 +1010,7 @@ require(['jquery',
     function splunkJSInput(config) {
         var config = this.config = config;
 
-        // Save context 
+        // Save context
         var that = this;
 
         // Remove component and add div back
@@ -864,7 +1020,7 @@ require(['jquery',
 
             if(splunkJsComponent) {
                 splunkJsComponent.remove();
-                $(el).append('<div id="' + this.config.el + '"></div>');    
+                $(el).append('<div id="' + this.config.el + '"></div>');
             }
         }
 
@@ -872,7 +1028,7 @@ require(['jquery',
         this.updateRemove = function() {
             var el = "#" + this.config.parentEl;
             var splunkJsComponent = mvc.Components.get(this.config.id);
-            
+
             if(splunkJsComponent) {
                 splunkJsComponent.remove();
             }
@@ -890,8 +1046,8 @@ require(['jquery',
 
             // Check to make sure div is there before rendering
             if ($(el).length) {
-                var choices = _.has(this.config, "choices") ? this.config.choices:[];    
-    
+                var choices = _.has(this.config, "choices") ? this.config.choices:[];
+
                 // Create search manager if it doesn't exist
                 if(!splunkJsComponentSearch) {
                     this.config.searchInstance = new SearchManager({
@@ -911,7 +1067,7 @@ require(['jquery',
                         valueField: "value",
                         default: _.has(this.config, "default") ? this.config.default:null,
                         el: $(el)
-                    }).render();                       
+                    }).render();
                 } else {
                     this.config.instance = new MultiDropdownView({
                         id: this.config.id,
@@ -923,7 +1079,7 @@ require(['jquery',
                         width: 350,
                         default: _.has(this.config, "default") ? this.config.default:null,
                         el: $(el)
-                    }).render();         
+                    }).render();
                 }
             } else {
                 setTimeout(function() {
@@ -931,7 +1087,7 @@ require(['jquery',
                 }, 100);
             }
         }
-        
+
         // Get values from bootstrap table
         this.getVals = function() {
             return this.config.instance.val();
@@ -1000,7 +1156,7 @@ require(['jquery',
                                                 "<div class=\"alert alert-error\"><i class=\"icon-alert\"></i>Please enter a script username</div>",
                                                 "Close")
                         }
-            
+
                     }
                     if (ui_response.data.entry[i].content.ui_spw_label != undefined) {
                         SPassword = $('input[id=spwTextInput]').val();
@@ -1328,7 +1484,7 @@ require(['jquery',
                 if (confirmSubmit() == false) {
                     return false;
                 };
-    
+
                 $('#command-progress-div').css("visibility", "visible");
                 $("#command-submit").prop("disabled",true);
 
@@ -1365,7 +1521,7 @@ require(['jquery',
                     }
                 })
                 .done(function () {
-                    
+
                     // Set interval to update the job status
                     populateTableRefresh();
                     IntervalId = setInterval(function () {
@@ -1477,7 +1633,7 @@ require(['jquery',
             }
         })
         .done(function () {
-                    
+
             // Set interval to update the job status
             populateTableRefresh();
             IntervalId = setInterval(function () {
@@ -1494,7 +1650,8 @@ require(['jquery',
     }
 
  // Kick it all off
-    GetConfigCmdsConf();
+//debugger;
+GetConfigCmdsConf();
 
 });
 

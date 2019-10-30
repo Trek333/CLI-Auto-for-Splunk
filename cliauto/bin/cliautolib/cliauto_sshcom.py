@@ -40,6 +40,7 @@ try:
     #from pexpect import pxssh
     import pexpect
     from pxssh_cliauto import pxssh_cliauto
+    from pxssh_cliauto import EOF
     from pxssh_cliauto import ExceptionPxssh
     from pxssh_cliauto import ExceptionPxsshAccessDenied
     from pxssh_cliauto import ExceptionPxsshLoginTimeout
@@ -576,7 +577,7 @@ class sshcom(object):
             logging.error('Error, parallel_ssh, icount = ' + str(icount) + ': err = ' + str(err))
             return False
 
-    def ssh_update_result(self, host_dict, result, resultraw, iteration, resultstatus, custom_result_field_list, cmd_time_dict, login_dict):
+    def ssh_update_result(self, host_dict, result, resultraw, iteration, resultstatus, custom_result_field_list, cmd_time_dict, login_dict, multiple_host_events):
 
         try:
             with self.lock:
@@ -585,13 +586,13 @@ class sshcom(object):
 
                 cur_parallel_ssh_results = {}
                 cur_parallel_ssh_results[record_num] = host_dict
-                cur_parallel_ssh_results[record_num]['result'] = result
-                cur_parallel_ssh_results[record_num]['resultraw'] = resultraw
-                cur_parallel_ssh_results[record_num]['iteration'] = iteration
-                cur_parallel_ssh_results[record_num]['resultstatus'] = resultstatus
-                cur_parallel_ssh_results[record_num]['custom_result_field_list'] = custom_result_field_list
-                cur_parallel_ssh_results[record_num]['cmd_time_dict'] = cmd_time_dict
-                cur_parallel_ssh_results[record_num]['login_dict'] = login_dict
+                #cur_parallel_ssh_results[record_num]['result'] = result
+                #cur_parallel_ssh_results[record_num]['resultraw'] = resultraw
+                #cur_parallel_ssh_results[record_num]['iteration'] = iteration
+                #cur_parallel_ssh_results[record_num]['resultstatus'] = resultstatus
+                #cur_parallel_ssh_results[record_num]['custom_result_field_list'] = custom_result_field_list
+                #cur_parallel_ssh_results[record_num]['cmd_time_dict'] = cmd_time_dict
+                #cur_parallel_ssh_results[record_num]['login_dict'] = login_dict
 
                 parallel_ssh_results = {}
                 parallel_ssh_results[record_num] = host_dict
@@ -602,6 +603,7 @@ class sshcom(object):
                 parallel_ssh_results[record_num]['custom_result_field_list'] = custom_result_field_list
                 parallel_ssh_results[record_num]['cmd_time_dict'] = cmd_time_dict
                 parallel_ssh_results[record_num]['login_dict'] = login_dict
+                parallel_ssh_results[record_num]['multiple_host_events'] = multiple_host_events
 
                 self.cur_parallel_ssh_results[record_num] = cur_parallel_ssh_results[record_num]
                 self.parallel_ssh_results[record_num] = parallel_ssh_results[record_num]
@@ -654,7 +656,7 @@ class sshcom(object):
             logging.error('Error, eradicate_string function, err = ' + str(err) + ', Due to error to eradicate the command(s) result, the entire result was eradicated due to security concerns.')
             return 'Due to error to eradicate the command(s) result, the entire result was eradicated due to security concerns, err = ' + str(err)
 
-    def process_result(self, resultraw):
+    def process_result(self, resultraw, host_dict):
 
         try:  
 
@@ -723,96 +725,96 @@ class sshcom(object):
                         pass
 
                     try:
-                        find_regex1 = cmdtype_dict['find_regex1']
-                        success_regex1 = cmdtype_dict['success_regex1']
+                        find_regex1 = self.add_host_ip(cmdtype_dict['find_regex1'], host_dict)
+                        success_regex1 = self.add_host_ip(cmdtype_dict['success_regex1'], host_dict)
                         success_msg1 = cmdtype_dict['success_msg1']
                     except:
                         pass
 
                     try:
-                        find_regex2 = cmdtype_dict['find_regex2']
-                        success_regex2 = cmdtype_dict['success_regex2']
+                        find_regex2 = self.add_host_ip(cmdtype_dict['find_regex2'], host_dict)
+                        success_regex2 = self.add_host_ip(cmdtype_dict['success_regex2'], host_dict)
                         success_msg2 = cmdtype_dict['success_msg2']
                     except:
                         pass
 
                     try:
-                        find_regex3 = cmdtype_dict['find_regex3']
-                        success_regex3 = cmdtype_dict['success_regex3']
+                        find_regex3 = self.add_host_ip(cmdtype_dict['find_regex3'], host_dict)
+                        success_regex3 = self.add_host_ip(cmdtype_dict['success_regex3'], host_dict)
                         success_msg3 = cmdtype_dict['success_msg3']
                     except:
                         pass
 
                     try:
-                        find_regex4 = cmdtype_dict['find_regex4']
-                        success_regex4 = cmdtype_dict['success_regex4']
+                        find_regex4 = self.add_host_ip(cmdtype_dict['find_regex4'], host_dict)
+                        success_regex4 = self.add_host_ip(cmdtype_dict['success_regex4'], host_dict)
                         success_msg4 = cmdtype_dict['success_msg4']
                     except:
                         pass
 
                     try:
-                        find_regex5 = cmdtype_dict['find_regex5']
-                        success_regex5 = cmdtype_dict['success_regex5']
+                        find_regex5 = self.add_host_ip(cmdtype_dict['find_regex5'], host_dict)
+                        success_regex5 = self.add_host_ip(cmdtype_dict['success_regex5'], host_dict)
                         success_msg5 = cmdtype_dict['success_msg5']
                     except:
                         pass
 
                     try:
-                        skip_regex1 = cmdtype_dict['skip_regex1']
+                        skip_regex1 = self.add_host_ip(cmdtype_dict['skip_regex1'], host_dict)
                         skip_msg1 = cmdtype_dict['skip_msg1']
                     except:
                         pass
 
                     try:
-                        skip_regex2 = cmdtype_dict['skip_regex2']
+                        skip_regex2 = self.add_host_ip(cmdtype_dict['skip_regex2'], host_dict)
                         skip_msg2 = cmdtype_dict['skip_msg2']
                     except:
                         pass
 
                     try:
-                        skip_regex3 = cmdtype_dict['skip_regex3']
+                        skip_regex3 = self.add_host_ip(cmdtype_dict['skip_regex3'], host_dict)
                         skip_msg3 = cmdtype_dict['skip_msg3']
                     except:
                         pass
 
                     try:
-                        skip_regex4 = cmdtype_dict['skip_regex4']
+                        skip_regex4 = self.add_host_ip(cmdtype_dict['skip_regex4'], host_dict)
                         skip_msg4 = cmdtype_dict['skip_msg4']
                     except:
                         pass
 
                     try:
-                        skip_regex5 = cmdtype_dict['skip_regex5']
+                        skip_regex5 = self.add_host_ip(cmdtype_dict['skip_regex5'], host_dict)
                         skip_msg5 = cmdtype_dict['skip_msg5']
                     except:
                         pass
 
                     try:
-                        fail_regex1 = cmdtype_dict['fail_regex1']
+                        fail_regex1 = self.add_host_ip(cmdtype_dict['fail_regex1'], host_dict)
                         fail_msg1 = cmdtype_dict['fail_msg1']
                     except:
                         pass
 
                     try:
-                        fail_regex2 = cmdtype_dict['fail_regex2']
+                        fail_regex2 = self.add_host_ip(cmdtype_dict['fail_regex2'], host_dict)
                         fail_msg2 = cmdtype_dict['fail_msg2']
                     except:
                         pass
 
                     try:
-                        fail_regex3 = cmdtype_dict['fail_regex3']
+                        fail_regex3 = self.add_host_ip(cmdtype_dict['fail_regex3'], host_dict)
                         fail_msg3 = cmdtype_dict['fail_msg3']
                     except:
                         pass
 
                     try:
-                        fail_regex4 = cmdtype_dict['fail_regex4']
+                        fail_regex4 = self.add_host_ip(cmdtype_dict['fail_regex4'], host_dict)
                         fail_msg4 = cmdtype_dict['fail_msg4']
                     except:
                         pass
 
                     try:
-                        fail_regex5 = cmdtype_dict['fail_regex5']
+                        fail_regex5 = self.add_host_ip(cmdtype_dict['fail_regex5'], host_dict)
                         fail_msg5 = cmdtype_dict['fail_msg5']
                     except:
                         pass
@@ -908,26 +910,28 @@ class sshcom(object):
             # The default result is Fail
             result = 'Fail'
 
-            # Search for branch regex
-            cmd_branch_regex_list_dict = cmd_dict['cmd_branch_regex_list_dict']
-            if cmd_branch_regex_list_dict != '':
-                for branch_index in range(1, 21):
+            # Search for select regex
+            cmd_select_regex_list_dict = cmd_dict['cmd_select_regex_list_dict']
+            if cmd_select_regex_list_dict != '':
+                for select_index in range(1, 21):
                     try:
-                        cmd_branch_regex_list_dict['branch' + format(branch_index, '02')]
+                        cmd_select_regex_list_dict['select' + format(select_index, '02')]
                     except:
                         continue
 
-                    for cmd_branch_regex in cmd_branch_regex_list_dict['branch' + format(branch_index, '02')]:
-                        logging.debug("cmd_branch_regex = " + cmd_branch_regex)
+                    for cmd_select_regex in cmd_select_regex_list_dict['select' + format(select_index, '02')]:
+                        cmd_select_regex = self.add_host_ip(cmd_select_regex, host_dict)
+                        logging.debug("cmd_select_regex = " + cmd_select_regex)
                         logging.debug("cmd_out = " + cmd_out)
-                        if re.search(cmd_branch_regex , cmd_out):
-                            result = 'branch' + format(branch_index, '02')
+                        if re.search(cmd_select_regex , cmd_out):
+                            result = cmd_dict['cmd_select' + format(select_index, '02')]
                             return ['Branch', result]
 
             # Search for success regex
             cmd_success_regex_list = cmd_dict['cmd_success_regex_list']
             for cmd_success_regex in cmd_success_regex_list:
 
+                cmd_success_regex = self.add_host_ip(cmd_success_regex, host_dict)
                 logging.debug("cmd_success_regex = " + cmd_success_regex)
                 logging.debug("cmd_out = " + cmd_out)
                 if re.search(cmd_success_regex , cmd_out):
@@ -939,6 +943,7 @@ class sshcom(object):
             cmd_fail_regex_list = cmd_dict['cmd_fail_regex_list']
             for cmd_fail_regex in cmd_fail_regex_list:
 
+                cmd_fail_regex = self.add_host_ip(cmd_fail_regex, host_dict)
                 logging.debug("cmd_fail_regex = " + cmd_fail_regex)
                 logging.debug("cmd_out = " + cmd_out)
                 if re.search(cmd_fail_regex , cmd_out):
@@ -953,7 +958,7 @@ class sshcom(object):
             logging.error('Error, process_ssh_cmd function, err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  "Error, process_ssh_cmd, err = " + str(err), "Error, process_ssh_cmd, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return ['Fail', 'Fail']
 
     def ssh_pexpect(self, host_dict, icount):
@@ -961,13 +966,11 @@ class sshcom(object):
         try:
             logging.debug("Starting ssh_pexpect...")
 
-            # Initialize login_dict, cmd_time_dict, record_num, resultraw, and get max_result_len
+            # Initialize login_dict, cmd_time_dict, record_num, and resultraw
             login_dict = {}
             cmd_time_dict = {}
             record_num = host_dict['record_num']
             resultraw = ""
-            max_result_len = (self.objcfg.max_result_blocks * 1024)
-            logging.debug("max_result_len = " + str(max_result_len))
 
             # Get the cmd_dict_list for the cmdtpye
             mode_level = 0
@@ -978,6 +981,15 @@ class sshcom(object):
                     cmdtype_dict_current = cmdtype_dict
                     cmd_dict_list = cmdtype_dict_current['cmd_dict_list']
                     break
+
+            # Get max_result_len
+            try:
+                cmdtype_dict_current['max_result_blocks_override']
+                max_result_len = (cmdtype_dict_current['max_result_blocks_override'] * 1024)
+            except:
+                max_result_len = (self.objcfg.max_result_blocks * 1024)
+
+            logging.debug("max_result_len = " + str(max_result_len))
 
             # Set output line delimiter
             output_line_delimiter = str(cmdtype_dict_current['output_line_delimiter'])
@@ -1007,7 +1019,7 @@ class sshcom(object):
                 if ucrfl[0] == False:
                     return False
 
-                sptr = self.ssh_update_result(host_dict, 'Check ssh key exchange - success', str(result), str(icount), 'Success', ucrfl[1], {}, pl[3])
+                sptr = self.ssh_update_result(host_dict, 'Check ssh key exchange - success', str(result), str(icount), 'Success', ucrfl[1], {}, pl[3], [])
                 logging.debug("Exiting ssh_pexpect...")
                 return True
 
@@ -1054,6 +1066,14 @@ class sshcom(object):
                 except:
                     cli_cmd_delay = self.objcfg.cli_cmd_delay
 
+                # If cmd_cli_cmd_sleep exists then get the value else set to zero
+                # cmd_cli_cmd_sleep needed for CLI commands needing delay after login
+                try:
+                    cmd_cli_cmd_sleep = cmd_dict['cmd_cli_cmd_sleep']
+
+                except:
+                    cmd_cli_cmd_sleep = 0
+
                 # If cmd_max_output_before_truncate exists then truncate ssh_cmd output
                 try:
                     cmd_max_output_before_truncate = cmd_dict['cmd_max_output_before_truncate']
@@ -1070,13 +1090,20 @@ class sshcom(object):
                 except Exception as e:
                     pass
 
+                # If cmd_send_linefeed exists then set it; otherwise 0
+                try:
+                    cmd_send_linefeed = cmd_dict['cmd_send_linefeed']
+
+                except:
+                    cmd_send_linefeed = '0'
+
                 logging.debug('ssh_session.PROMPT = ' + str(ssh_session.PROMPT))
 
                 # Execute custom script
                 if self.fargs['cmdtype'].lower() == 'cli_custom':
                     cmd_list = cmd.split("@cmd_del@")
                     for cmditem in cmd_list:
-                        esc = self.pexpect_ssh_cmd('custom', cmditem, cmditem, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
+                        esc = self.pexpect_ssh_cmd('custom', cmditem, cmditem, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount, 0, '0')
                         if esc[0] != 'Success':
                             return False
                         esc[2] = esc[2].replace('\n',output_line_delimiter)
@@ -1088,7 +1115,7 @@ class sshcom(object):
                     break
 
                 # Execute conf ssh_command
-                esc = self.pexpect_ssh_cmd('conf', cmd, cmd_dict['cmd' + current_branch], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
+                esc = self.pexpect_ssh_cmd('conf', cmd, cmd_dict['cmd' + current_branch], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount, cmd_cli_cmd_sleep, cmd_send_linefeed)
                 if esc[0] != 'Success':
                     return False
                 esc[2] = esc[2].replace('\n',output_line_delimiter)
@@ -1101,7 +1128,7 @@ class sshcom(object):
                     break
 
                 # Check for config diff
-                cfncd = self.check_for_config_diff(result_ssh_cmd, cmd_dict, host_dict, icount)
+                cfncd = self.check_for_config_diff(result_ssh_cmd, cmd_dict, host_dict, icount, current_branch)
                 if cfncd[0] != 'Success':
                     return False
                 if cfncd[1]:
@@ -1130,7 +1157,7 @@ class sshcom(object):
                     pass
 
                 # if the max_result_len is exceeded, break out of loop
-                # this should not never happen for small length ouput from command
+                # this should not never happen for small length output from command
                 if len(resultraw) > max_result_len:
                     execute_exit_cmds_flag = True
                     break
@@ -1157,7 +1184,8 @@ class sshcom(object):
                 while mode_level > -1:
 
                     logging.info('mode_level = ' + str(mode_level) + ' , exiting ssh session...')
-                    esc = self.pexpect_ssh_cmd('execute_exit_cmds_flag', cmdtype_dict_current['exit_cmd'], cmdtype_dict_current['exit_cmd'], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount)
+                    esc = self.pexpect_ssh_cmd('execute_exit_cmds_flag', cmdtype_dict_current['exit_cmd'], \
+                        cmdtype_dict_current['exit_cmd'], cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount, 0, '0')
                     if esc[0] != 'Success':
                         return False
 
@@ -1177,24 +1205,51 @@ class sshcom(object):
             result = result.replace('\r',output_line_delimiter)
 
             # Process result (get resultstatus & result values) of known commands
-            pr = self.process_result(result)
+            pr = self.process_result(result, host_dict)
+            pr1 = pr[1]
+            pr2 = pr[2]
             logging.debug("pr = " + str(pr))
-
-            # Truncate result to max_result_len length
-            result = result[:max_result_len]
 
             # Update custom result fields
             ucrfl = self.update_custom_result_field_list(host_dict, icount, result)
             if ucrfl[0] == False:
                 return False
 
-            # Log result to app log file
-            logging.info("resultraw=" + str(result))
+            # Truncate result to max_result_len length
+            if len(result) > max_result_len:
+                result = result[:max_result_len] + 'overall output truncated by cliauto'
 
-            # Remove output_line_delimiter from result
-            result = result.replace(output_line_delimiter,'')
+            # Log length of result to app log file
+            logging.info("len(resultraw=)" + str(len(result)))
 
-            sptr = self.ssh_update_result(host_dict,  pr[2], str(result), str(icount), pr[1], ucrfl[1], cmd_time_dict, login_dict)
+            # Process output data type
+            try:
+                output_type_dict1 = cmdtype_dict_current['output_type_dict']['1']
+            except:
+                output_type_dict1 = {}
+
+            if output_type_dict1 != {} and pr1 == 'Success':
+
+                # Get the mulitple events for the host
+                gme = self.get_multiple_events(result, cmdtype_dict_current['output_type_dict'], output_line_delimiter)
+                multiple_host_events = gme[2]
+
+                # If get_multiple_events is not successful, update resultstatus & result values
+                if gme[0] != 'Success':
+                    pr1 = gme[0]
+                    pr2 = gme[1]
+                result = ''
+                
+            else:
+                # Not a multiple_events output type
+                multiple_host_events = []
+
+                # Remove output_line_delimiter from result
+                result = result.replace(output_line_delimiter,'')
+
+            # Update results for the host
+            sptr = self.ssh_update_result(host_dict,  pr2, str(result), str(icount), pr1, ucrfl[1], cmd_time_dict, login_dict, multiple_host_events)
+
             logging.debug("Exiting ssh_pexpect...")
 
             return True
@@ -1203,7 +1258,7 @@ class sshcom(object):
 
             logging.error('Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
-            sptr = self.ssh_update_result(host_dict,  'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), 'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
+            sptr = self.ssh_update_result(host_dict,  'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), 'Error, ssh_pexpect function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             ssh_session.close()
             return False
 
@@ -1218,6 +1273,7 @@ class sshcom(object):
             # Update custom result fields
             custom_result_field_list = copy.deepcopy(self.custom_result_field_list)
             for i,custom_result_field_dict in enumerate(custom_result_field_list):
+                custom_result_field_dict['field_regex'] = self.add_host_ip(custom_result_field_dict['field_regex'], host_dict)
                 match = re.search(custom_result_field_dict['field_regex'], result)
 
                 try:
@@ -1235,7 +1291,7 @@ class sshcom(object):
             logging.error('Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), \
-                'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                'Error, update_custom_result_field_list function, icount = ' + str(icount) + ', err = ' + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return [False, custom_result_field_list]
 
     def check_socket(self, host, port, socketretries, sockettimeout):
@@ -1323,13 +1379,13 @@ class sshcom(object):
                     if self.fargs['cmdtype'].lower() == 'cli_check_port':
                         sptr = self.ssh_update_result(host_dict, "Port " + str(port) + " on host open", "Port " + str(port) + " on " + host + " open", \
                             str(icount), 'Success', self.custom_result_field_list, {}, \
-                            {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count})
+                            {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count}, [])
                         return ['Abort Port Check Only', ssh_session, '', {}]
                 else:
                     sptr = self.ssh_update_result(host_dict, "Port " + str(port) + " on host not open", \
                         "Port " + str(port) + " on " + host + " not open after " + str(login_socket_check_count) + " socket connection attempt(s).", \
                         str(icount), 'Fail', self.custom_result_field_list, {}, \
-                        {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count})
+                        {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count}, [])
                     return ['Fail', ssh_session, '', {}]
 
             # Try to connect to node
@@ -1341,12 +1397,14 @@ class sshcom(object):
                     ssh_session = pxssh_cliauto(options=options)
                     if self.fargs['cmdtype'].lower() == 'cli_check_vkex':
                         logging.debug("ssh key exchange only started for " + host + "; timeout = " + str(timeout))
-                        kex_output_filtered = ssh_session.login(host, 'kex', '', login_timeout=timeout, port=port, cipher=cipher, auto_prompt_reset=False, \
+                        kex_output_filtered = ssh_session.login(host, 'kex', '', \
+                            login_timeout=timeout, port=port, cipher=cipher, auto_prompt_reset=False, \
                             original_prompt=r'#\s|>\s|% User logout\.', sync_original_prompt=False, quiet=False, \
                             verbose_level=kex_verbose_level, check_kex_only=True, \
                             kex_filter_regex=kex_filter_regex)
                         logging.debug("ssh key exchange only completed for " + host)
-                        login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
+                        login_dict = self.update_login_dict(login_socket_check_time, \
+                            login_socket_check_count, login_epoch_previous, connect_count)
                         return ['kex only', ssh_session, kex_output_filtered, login_dict]
                         break
                     else:
@@ -1358,13 +1416,13 @@ class sshcom(object):
                     logging.debug("Authentication failed when connecting to " + host)
                     login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Authentication failed when connecting to host", "Authentication failed when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshLoginTimeout:
                     logging.debug("Login timeout when connecting to " + host)
                     login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Login timeout when connecting to host", "Login timeout when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshHostKeyChanged:
                     logging.debug("WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR " + host + " SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.")
@@ -1372,21 +1430,22 @@ class sshcom(object):
                     sptr = self.ssh_update_result(host_dict,  \
                         "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR HOST SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.", \
                         "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED FOR " + host + " SINCE LAST LOGIN! POSSIBLE MAN-IN-THE-MIDDLE ATTACK! It is also possible that a host key has just been changed. Verify the known host key on the server with the system administrator.", \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshMaxHostsExceeded:
                     logging.debug("Max # of hosts exceeded when connecting to " + host)
                     login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict, \
                         "Max # of hosts exceeded when connecting to host", "Max # of hosts exceeded when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
                 except ExceptionPxsshNoCipherFound:
                     logging.debug("No matching cipher found when connecting to " + host)
                     login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict, \
-                        "No matching cipher found when connecting to host", "No matching cipher found when connecting to " + host, \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        "No matching cipher found when connecting to host or cipher in cipher key/value pair of cliauto.conf not supported by ssh client", \
+                        "No matching cipher found when connecting to " + host + ' or cipher in cipher key/value pair of cliauto.conf not supported by ssh client', \
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
                 except Exception as err:
                     ssh_session.close()
@@ -1399,7 +1458,7 @@ class sshcom(object):
                     login_dict = self.update_login_dict(login_socket_check_time, login_socket_check_count, login_epoch_previous, connect_count)
                     sptr = self.ssh_update_result(host_dict,  "Could not connect to host", \
                         "Could not connect to " + host + " after " + str(connect_count) + " connection attempt(s).", \
-                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict)
+                        str(icount), 'Fail', self.custom_result_field_list, {}, login_dict, [])
                     return ['Fail', ssh_session, '', {}]
 
                 connect_count += 1
@@ -1410,10 +1469,10 @@ class sshcom(object):
         except Exception as err:
             logging.error('Error, pexpect_login, icount = ' + str(icount) + ': err = ' + str(err))
             sptr = self.ssh_update_result(host_dict,  "Error, pexpect_login, err = " + str(err), "Error, pexpect_login, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return ['Fail', ssh_session, '']
 
-    def pexpect_ssh_cmd(self, ssh_cmdtype, ssh_cmd, ssh_cmd_raw, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount):
+    def pexpect_ssh_cmd(self, ssh_cmdtype, ssh_cmd, ssh_cmd_raw, cli_cmd_delay, cmd_max_output_before_truncate, ssh_session, host_dict, icount, cmd_cli_cmd_sleep, cmd_send_linefeed):
 
         try:  
 
@@ -1423,10 +1482,20 @@ class sshcom(object):
             logging.debug("Entering pexpect_ssh_cmd..., ssh_cmd_log = " + str(ssh_cmd_log))
             execute_exit_cmds_flag = False
 
-            # Send the ssh cmd
-            ssh_session.sendline(str(ssh_cmd))
+            # Sleep for cmd_cli_cmd_sleep
+            # cmd_cli_cmd_sleep needed for CLI commands needing delay after login
+            if cmd_cli_cmd_sleep > 0:
+                logging.debug('Sleeping for ' + str(cmd_cli_cmd_sleep) + ' before ' + str(ssh_cmd) + ' on ' + str(host_dict['ip_address']))
+                time.sleep(cmd_cli_cmd_sleep)
+                logging.debug('Slept for ' + str(cmd_cli_cmd_sleep) + ' before ' + str(ssh_cmd) + ' on ' + str(host_dict['ip_address']))
 
-            # Expect the prompt, EOF, or timeout
+            # Send the ssh cmd
+            if cmd_send_linefeed == '0':
+                ssh_session.sendline(str(ssh_cmd))
+            else:
+                ssh_session.send(str(ssh_cmd))
+
+            # Expect the prompt or EOF exception. If exception other than EOF, return error
             epoch_previous = time.time()
             try:
                 ssh_session.prompt(timeout=cli_cmd_delay)
@@ -1439,32 +1508,32 @@ class sshcom(object):
                 elasped_time = epoch_now - epoch_previous
                 sptr = self.ssh_update_result(host_dict,  'Error, pexpect_ssh_cmd function', \
                     'Error, pexpect_ssh_cmd function, icount = ' + str(icount) + ', ssh_cmdtype = ' + str(ssh_cmdtype) + ', err = ' + str(err), \
-                    str(icount), 'Fail', self.custom_result_field_list, {ssh_cmd_raw : elasped_time}, {})
+                    str(icount), 'Fail', self.custom_result_field_list, {ssh_cmd_raw : elasped_time}, {}, [])
                 return ['Error', True, cmd_out, {ssh_cmd_raw : elasped_time}]
             epoch_now = time.time()
             elasped_time = epoch_now - epoch_previous
 
-            # Try to get the ssh session text
+            # Try to get the ssh session before & after text
+            # If no exception occured for prompt method, before & after contain str (Python 2.x) or bytes object (Python 3.x)
+            # If an EOF expection occured for prompt method, after contains pexpect.EOF object (type object)
             before = ''
             after = ''
             try:
-                before = str(ssh_session.before)
-                if 'pexpect.exceptions.EOF'in before:
-                    before = ''
-            except:
+                before = ssh_session.before.decode()
+            except Exception:
                 pass
             try:
-                after = str(ssh_session.after)
-                if 'pexpect.exceptions.EOF'in after:
-                    after = ''
-            except:
+                after = ssh_session.after.decode()
+            except Exception:
                 pass
+
             cmd_out = before + after
             cmd_out = self.eradicate_string(cmd_out)
 
             # If a cmd_max_output_before_truncate value exists truncate cmd_out string
             if cmd_max_output_before_truncate != None:
-                cmd_out = cmd_out[:cmd_max_output_before_truncate] + 'output truncated by cliauto'
+                if len(cmd_out) > cmd_max_output_before_truncate:
+                    cmd_out = cmd_out[:cmd_max_output_before_truncate] + 'output truncated by cliauto'
 
             return ['Success', execute_exit_cmds_flag, cmd_out, {ssh_cmd_raw : elasped_time}]
 
@@ -1474,7 +1543,7 @@ class sshcom(object):
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  'Error, pexpect_ssh_cmd function', \
                 'Error, pexpect_ssh_cmd function, icount = ' + str(icount) + ', ssh_cmdtype = ' + str(ssh_cmdtype) + ', err = ' + str(err), \
-                 str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                 str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return ['Error', True, cmd_out, {ssh_cmd_raw : elasped_time}]
 
     def check_for_prompt_pexpect(self, cmd_in, cli_cmd_delay, cmd_dict, mode_level, ssh_session, host_dict, icount):
@@ -1517,7 +1586,7 @@ class sshcom(object):
                         cmd_prompt_response_mode_level = cmd_prompt_override_response_mode_level
 
                     # Execute ssh_command for Prompt
-                    esc = self.pexpect_ssh_cmd('prompt', cmd_prompt_response_string, cmd_prompt_response_string, cli_cmd_delay, None, ssh_session, host_dict, icount)
+                    esc = self.pexpect_ssh_cmd('prompt', cmd_prompt_response_string, cmd_prompt_response_string, cli_cmd_delay, None, ssh_session, host_dict, icount, 0, '0')
                     cmd_out = esc[2]
                     cmd_time_dict = esc[3]
                     if esc[0] != 'Success':
@@ -1534,10 +1603,10 @@ class sshcom(object):
         except Exception as err:
             logging.error('Error, check_for_prompt_pexpect, icount = ' + str(icount) + ': err = ' + str(err))
             sptr = self.ssh_update_result(host_dict,  "Error, check_for_prompt_pexpect, err = " + str(err), \
-                "Error, check_for_prompt_pexpect, err = " + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                "Error, check_for_prompt_pexpect, err = " + str(err), str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return ['Fail', False, mode_level, cmd_out]
 
-    def check_for_config_diff(self, cmd_in, cmd_dict, host_dict, icount):
+    def check_for_config_diff(self, cmd_in, cmd_dict, host_dict, icount, current_branch):
 
         try:  
 
@@ -1565,7 +1634,7 @@ class sshcom(object):
             if cmd_no_config_diff_regex != '':
 
 
-                logging.debug('Checking for no config diff, cmd =' + str(cmd_dict['cmd']))
+                logging.debug('Checking for no config diff, cmd =' + str(cmd_dict['cmd' + current_branch]))
 
                 # If cmd_no_config_diff_regex is in the cmd_in, no configuration difference exists so return False
                 if re.search(cmd_no_config_diff_regex, cmd_in):
@@ -1587,7 +1656,7 @@ class sshcom(object):
             logging.error('Error, check_for_config_diff, icount = ' + str(icount) + ': err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             sptr = self.ssh_update_result(host_dict,  "Error, check_for_config_diff, err = " + str(err), "Error, check_for_config_diff, err = " + str(err), \
-                str(icount), 'Fail', self.custom_result_field_list, {}, {})
+                str(icount), 'Fail', self.custom_result_field_list, {}, {}, [])
             return ['Fail', False, False]
 
     def merge_two_dicts(self, x, y):
@@ -1602,4 +1671,140 @@ class sshcom(object):
         login_dict = {'login_socket_check_time' : login_socket_check_time, 'login_socket_check_count' : login_socket_check_count, \
             'login_time' : login_time, 'login_connect_count' : connect_count}
         return login_dict
+
+    def add_host_ip(self, raw_regex_text, host_dict):
+
+        try:
+            regex_text = raw_regex_text
+            host = re.escape(host_dict['host'])
+            ip_address = re.escape(host_dict['ip_address'])
+            regex_text = regex_text.replace('@cliauto_host@', host)
+            regex_text = regex_text.replace('@cliauto_ip_address@', ip_address)
+
+            return regex_text
+
+        except Exception as err:
+            logging.error('Error, add_host_ip function, err = ' + str(err))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            return raw_regex_text
+
+    def get_multiple_events(self, result, output_type_dict, output_line_delimiter):
+
+        try:
+            m_events = []
+            for output_type_index in range(1, 21):
+                if output_type_dict[str(output_type_index)] != {}:
+
+                    logging.info("output_type_dict=" + str(output_type_dict))
+
+                    output_data_name = output_type_dict[str(output_type_index)]['output_data_name']
+                    output_data_type = output_type_dict[str(output_type_index)]['output_data_type']
+                    output_data_format = output_type_dict[str(output_type_index)]['output_data_format']
+                    output_header_regex = output_type_dict[str(output_type_index)]['output_header_regex']
+                    output_data_regex = output_type_dict[str(output_type_index)]['output_data_regex']
+
+                    if output_data_type == 'multiple_events_fixed_width':
+                        if output_data_name == None or output_data_format == None or output_header_regex == None or output_data_regex == None:
+                            return ['Fail', 'output_data_name, output_data_format, output_header_regex, and/or output_data_regex do not exist or invalid', []]
+                        else:
+
+                            # Get header
+                            try:
+                                match = re.search(output_header_regex, result)
+                                headers = match.group('value')
+                            except:
+                                return ['Fail', 'unable to get header for fixed_width output type', []]
+
+                            # Get data
+                            try:
+                                match = re.search(output_data_regex, result)
+                                data = match.group('value')
+                            except:
+                                return ['Fail', 'unable to get data for fixed_width output type', []]
+
+                            # Get column locations
+                            column_locations = []
+                            try:
+                                conf_headers = output_data_format.split(output_line_delimiter)
+                            except:
+                                return ['Fail', 'unable to get column headers from cliauto_cmds.conf file', []]
+
+                            for conf_header in conf_headers:
+                                index = headers.find(conf_header)
+                                if index > -1:
+                                    column_locations.append(index)
+
+                            # Sort column locations
+                            column_locations.sort()
+
+                            #logging.info("column_locations=" + str(column_locations))
+                            #logging.info("headers=" + str(headers))
+
+                            # Add line seperators back to data
+                            data = data.replace(output_line_delimiter + output_line_delimiter,'\r\n')
+                            data = data.replace(output_line_delimiter,'\r')
+
+                            # Split data into a lines list
+                            data_list = data.splitlines()
+                            data_list_len = len(data_list)
+
+                            # Initialize the event number for the host
+                            hosteventnum = 1
+                            #logging.info("data_list=" + str(data_list))
+
+                            # Get data lines into event list
+                            for data_line in data_list:
+
+                                # Initialize m_event, column_num, and prev_column_location
+                                m_event = 'hosteventname="' + str(output_data_name) + '" ' + 'hosteventcount=' + str(data_list_len) + ' ' + 'hosteventnum=' + str(hosteventnum) + ' '
+                                column_num = 0
+                                prev_column_location = 0
+
+                                for column_location in column_locations:
+                                    #logging.info("prev_column_location=" + str(prev_column_location))
+                                    #logging.info("column_location=" + str(column_location))
+                                    if column_num > 0:
+                                        column_name = headers[prev_column_location:column_location].strip().replace(' ', '_')
+
+                                        if data_line[prev_column_location:column_location].strip().find('"') > -1:
+                                            column_value = data_line[prev_column_location:column_location].strip()
+                                        else:
+                                            column_value = '"' + data_line[prev_column_location:column_location].strip() + '"'
+
+                                        m_event = m_event + column_name + '=' + column_value + ' '
+
+                                    prev_column_location = column_location
+                                    column_num += 1
+
+                                    # Guard against infinite loop
+                                    if column_num > 500:
+                                        break
+
+                                # Format last column header in record
+                                column_name = headers[column_location:].strip().replace(' ', '_')
+
+                                # Format last column value in record
+                                if data_line[column_location:].strip().find('"') > -1:
+                                    column_value = data_line[column_location:].strip()
+                                else:
+                                    column_value = '"' + data_line[column_location:].strip() + '"'
+
+                                m_event = m_event + column_name + '=' + column_value
+
+                                #logging.info("m_event=" + str(m_event))
+                                m_events.append(m_event)
+                                hosteventnum += 1
+
+                    else:
+                        return ['Fail', 'invalid output_data_type ' + str(output_data_type), []]
+
+                else:
+                    break
+
+            return ['Success', '', m_events]
+
+        except Exception as err:
+            logging.error('Error, get_multiple_events function, err = ' + str(err))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            return ['Fail', 'Error, get_multiple_events function, err = ' + str(err), []]
 

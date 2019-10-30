@@ -38,6 +38,9 @@ sshport = <port number>
 cipher = <comma seperated values string of ciphers>
 * Set the cipher (ssh) required by the various node types
 * Sonicwall v6.1.x firmware of test firewall required 3des-cbc
+* If a cipher that is not supported by your version of Openssh client is in this key/value, Openssh client will get an error and cliauto job will fail.
+* Execute "ssh -Q cipher" to get supported ciphers of Openssh client
+* The supported ciphers of Openssh client vary with Openssh versions
 
 StrictHostKeyChecking = <"yes | "no">
 * StrictHostKeyChecking option for ssh connection to nodes

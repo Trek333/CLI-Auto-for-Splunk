@@ -1,0 +1,10 @@
+<dashboard script="cliauto-about.js" stylesheet="" refresh="300" hideEdit="true">
+  <label>About</label>
+    <row>
+    <panel>
+      <html>
+        <div id="command-table"></div>
+      </html>
+    </panel>
+  </row>
+</dashboard>

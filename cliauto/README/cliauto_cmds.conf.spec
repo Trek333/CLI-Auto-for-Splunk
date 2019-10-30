@@ -171,12 +171,19 @@ cmd<1-20> = <command>
 cmd_branch<1-20>_<1-20> = <command>
 * If specified, the <command> is executed in the CLI (ssh) session
 
+cmd<1-20>_send_linefeed = <no | yes>
+cmd_branch<1-20>_<1-20>_send_linefeed = <no | yes>
+* If specified with a value of yes, the pexpect sendline method is executed for the CLI command in the CLI (ssh) session
+* If specified with a value of no, the pexpect send method is executed for the CLI command in the CLI (ssh) session
+* Default value is yes
+
 cmd<1-20>_mode_level = <integer level>
 cmd_branch<1-20>_<1-20>_mode_level = <integer level>
 * The <integer level> is an integer that indicates the mode level of the CLI (ssh) session after the corresponding cmd<1-20> executes successfully.
 
-cmd<1-20>_branch<1-20>_regex<1-20> = <regular expression>
-* The raw result of the cmd<1-20> is searched for the <regular expression>. If found, the cmd<1-20> is marked to execute the branch<1-20> CLI commands.
+cmd<1-20>_select<1-20> = <branch string>
+cmd<1-20>_select<1-20>_regex<1-20> = <regular expression>
+* The raw result of the cmd<1-20> is searched for the <regular expression>. If found, the CLI command execution path is diverted to the set of CLI commands starting at cmd_<branch string>_01.
 
 cmd<1-20>_success_regex<1-20> = <regular expression>
 cmd_branch<1-20>_<1-20>_success_regex<1-20> = <regular expression>
@@ -204,6 +211,10 @@ cmd_branch<1-20>_<1-20>_cli_cmd_delay = <time in seconds>
 * If specified, the cmd<1-20>_cli_cmd_delay will override the cli_cmd_delay in the default/cliauto.conf file.
 * cmd<1-20>_cli_cmd_delay is timeout for pexpect to wait for the next prompt
 
+cmd<1-20>_cli_cmd_sleep = <time in seconds>
+cmd_branch<1-20>_<1-20>_cli_cmd_sleep = <time in seconds>
+* If specified, the cmd<1-20>_cli_cmd_sleep will sleep before executing CLI command
+
 cmd<1-20>_expect_prompt_regex = <regular expression>
 cmd_branch<1-20>_<1-20>_expect_prompt_regex = <regular expression>
 * If specified, the cmd<1-20>_expect_prompt_regex will override the expect_prompt_regex
@@ -226,3 +237,33 @@ custom_result_field<1-20>_regex = <regular expression>
 custom_result_field<1-20>_duplicate_check = <no | yes>
 * A value of no disables the duplicate check of custom field <1-20>
 * A value of yes enables the duplicate check of custom field <1-20>
+
+output_data_name<1-20> = <string>
+* A name for the type of data
+
+output_data_type<1-20> = <string>
+* A value of single_event is for command types that only output a single Splunk event per host
+* A value of multiple_events_fixed_width is for command types that output multiple Splunk events per host with fixed width columns and a header record
+* If not specified, output_type = single_event
+
+output_data_format<1-20> = <string>
+* A string which defines the data format returned by the output_data_regex
+* For multiple_events_fixed_width, the value should contain a delimited string using the output_line_delimiter as the delimiter
+
+output_header_regex<1-20> = <regular expression>
+* The regular expression to find the header record for the data
+
+output_data_regex<1-20> = <regular expression>
+* The regular expression to find the data records for the data
+
+output_data_stats_search_name<1-4> = <string>
+* A stats search string suffix name
+
+output_data_stats_search<1-4> = <string>
+* A stats search string suffix for a custom search
+
+max_result_blocks_override = <maximum number of blocks>
+* An override for the maximum number of blocks setting in the cliauto_.conf file.
+* This override was added to due large size of output data for output_type=multiple_events
+* The <maximum number of blocks> in each result (1 block = 1 KB or 1024 bytes). Min = 1, Max = 500.
+

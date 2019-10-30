@@ -65,7 +65,7 @@ class pxssh_cliauto(pxssh.pxssh):
                 sync_original_prompt=True, ssh_config=None,
                 cipher=None, 
                 host_key_changed_regex="(?i)WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED",
-                no_cipher_found_regex="(?i)no matching cipher found",
+                no_cipher_found_regex="(?i)no matching cipher found|(?i)Unknown cipher type",
                 host_key_check_regex="(?i)are you sure you want to continue connecting",
                 access_denied_regex="(?i)access denied|(?i)permission denied",
                 terminal_type_regex="(?i)terminal type",
@@ -208,17 +208,20 @@ class pxssh_cliauto(pxssh.pxssh):
                 self.close()
                 raise ExceptionPxsshNoCipherFound('No Cipher found')
             if i==2:
-                kex_output = self.before + self.after
+                #kex_output = self.before + self.after
+                kex_output = self.before.decode() + self.after.decode()
                 self.sendline("yes")
                 i = self.expect(session_init_regex_array, timeout=login_timeout)
             if i==3:
-                kex_output = self.before + self.after
+                #kex_output = self.before + self.after
+                kex_output = self.before.decode() + self.after.decode()
                 self.sendline(terminal_type)
                 i = self.expect(session_init_regex_array, timeout=login_timeout)
 
             # Second pass
             if i==4:
-                kex_output = kex_output + self.before + self.after
+                #kex_output = kex_output + self.before + self.after
+                kex_output = kex_output + self.before.decode() + self.after.decode()
                 kex_output_list = re.findall(kex_filter_regex, kex_output)
                 kex_output_filtered = ''.join(kex_output_list)
                 self.close()
@@ -360,3 +363,30 @@ class pxssh_cliauto(pxssh.pxssh):
                                      '(received: %r, expected: %r).' % (
                                          self.before, self.PROMPT,))
         return True
+
+    def query_ciphers (self, expect_prompt_regex='#\s|$\s|>\s', timeout=5):
+
+        cmd = 'ssh -Q cipher'
+        query_output = ''
+
+        spawn._spawn(self, cmd)
+        i = self.expect(expect_prompt_regex, timeout=timeout)
+        query_output = self.before.decode() + self.after.decode()
+        query_output_list = query_output.splitlines()
+        query_output = ",".join(query_output_list)
+        self.close()
+        return query_output
+
+    def get_version (self, expect_prompt_regex='#\s|$\s|>\s', timeout=5):
+
+        cmd = 'ssh -V'
+        query_output = ''
+
+        spawn._spawn(self, cmd)
+        i = self.expect(expect_prompt_regex, timeout=timeout)
+        query_output = self.before.decode() + self.after.decode()
+        query_output_list = query_output.splitlines()
+        query_output = ",".join(query_output_list)
+        self.close()
+        return query_output
+

@@ -41,7 +41,9 @@ class configconf(object):
 
             # app=cliauto is needed to match list of CSV files in UI for permissions
             self.connect_service = client.connect(token=sargs['authtoken'],app='cliauto')
+            self.service = binding.connect(token=self.sargs['authtoken'])
 
+            self.cliauto_version = ''
             self.index = 'main'
             self.sourcetype = 'cliauto_ssh'
             self.source = 'cliauto'
@@ -91,6 +93,9 @@ class configconf(object):
 
     def service(self):
         return self.service
+
+    def cliauto_version(self):
+        return self.cliauto_version
 
     def index(self):
         return self.index
@@ -187,6 +192,7 @@ class configconf(object):
         try:
             logging.info('Starting get_items...')
             response = self.service.request(path, method='GET')
+
             body = response.body.read()
             dom=xml.dom.minidom.parseString(body)
             keys=dom.getElementsByTagName('s:key')
@@ -242,14 +248,14 @@ class configconf(object):
 
             # If duplicate ip addresses not allowed, check for duplicate ip addresses and return failure if duplicates found
             logging.debug('self.allow_duplicate_ip_address = ' + str(self.allow_duplicate_ip_address))
-            if self.allow_duplicate_ip_address <> '1':
+            if self.allow_duplicate_ip_address != '1':
                 host_list = []
                 dup_list = []
                 for ihost,host in enumerate(self.hosts):
                     host_list.append(host['ip_address'].strip())
                 dup_list = self.list_duplicates(host_list)
                 logging.debug('dup_list = ' + str(dup_list))
-                if dup_list <> []:
+                if dup_list != []:
                     return 'Failure, ' + str(len(dup_list)) + ' duplicate host ip address(es) exists in ' + str(len(self.hosts)) + ' host(s): ' + str(dup_list)
 
             # Log number of hosts in config file
@@ -316,8 +322,6 @@ class configconf(object):
 
         try:
             logging.info("Starting getconfig...")
-
-            self.service = binding.connect(token=self.sargs['authtoken'])
 
             # Get cliauto variables
             keys = self.get_items("/servicesNS/-/cliauto/configs/conf-cliauto/main")
@@ -469,17 +473,61 @@ class configconf(object):
                 return vns[0]
             self.kex_verbose_level = vns[1]
 
-            # Get cliauto_cmds
-            gcc = self.getconfigcmds()
-            if gcc != "Success":
-                return gcc
-
             return 'Success'
 
         except Exception as err:
             logging.error('Error, getconfig function, err = ' + str(err))
             logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
             return 'Error, getconfig function, err = ' + str(err)
+
+    def getappversion(self):
+
+        try:
+
+            logging.info("Starting getappversion...")
+
+            # Get cliauto app version
+            app_keys = self.get_items("/servicesNS/nobody/cliauto/configs/conf-app/launcher")
+
+            if app_keys[0] != "Success":
+                return app_keys[0]
+
+            for app_key in app_keys[1]:
+                if app_key.getAttribute('name') == 'version': 
+                    self.cliauto_version = app_key.childNodes[0].nodeValue
+
+            return 'Success'
+
+        except Exception as err:
+            logging.error('Error, getappversion function, err = ' + str(err))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            return 'Error, getappversion function, err = ' + str(err)
+
+    def getconfigall(self):
+
+        try:
+
+            # Get cliauto config
+            gc = self.getconfig()
+            if gc != "Success":
+                return gc
+
+            # Get cliauto_cmds config
+            gcc = self.getconfigcmds()
+            if gcc != "Success":
+                return gcc
+
+            # Get cliauto app version
+            gav = self.getappversion()
+            if gav != "Success":
+                return gav
+
+            return 'Success'
+
+        except Exception as err:
+            logging.error('Error, getconfigall function, err = ' + str(err))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            return 'Error, getconfigall function, err = ' + str(err)
 
     def getnodevalue(self, keychildnodes, default_value=None):
 
@@ -497,17 +545,22 @@ class configconf(object):
 
             logging.info("Starting getconfigcmds...")
 
-            self.service = binding.connect(token=self.sargs['authtoken'])
+            #self.service = binding.connect(token=self.sargs['authtoken'])
 
             # Get cliauto_cmds stanzas
-            stanzakeys = self.get_stanzas("/servicesNS/-/cliauto/configs/conf-cliauto_cmds")
-            if stanzakeys[0] != "Success":
-                return stanzakeys[0]
+            #stanzakeys = self.get_stanzas("/servicesNS/-/cliauto/configs/conf-cliauto_cmds")
+            #if stanzakeys[0] != "Success":
+                #return stanzakeys[0]
 
-            stanzas= []
-            for stanzakey in stanzakeys[1]:
+            #stanzas= []
+            #for stanzakey in stanzakeys[1]:
 
-                stanzas.append(str(stanzakey.getElementsByTagName('title')[0].firstChild.data))
+                #stanzas.append(str(stanzakey.getElementsByTagName('title')[0].firstChild.data))
+
+            # Get only the stanza from input to REST API due to default max = 30 entries for response
+            # The key/value pair count="0" for a GET query parameter would get all stanzas 
+            # See https://docs.splunk.com/Documentation/Splunk/7.3.2/RESTREF/RESTprolog#Pagination_and_filtering_parameters
+            stanzas = [self.fargs['cmdtype'].lower()]
 
             # Process stanzas
             for stanza in stanzas:
@@ -602,6 +655,10 @@ class configconf(object):
                 ui_pw1_invalid_characters_msg = ''
                 ui_pw2_invalid_characters_msg = ''
                 ui_pw3_invalid_characters_msg = ''
+                output_type_dict = {}
+                for output_type_index in range(1, 21):
+                    output_type_dict[str(output_type_index)] = {}
+                max_result_blocks_override = None
 
                 # Loop through keys to get varaibles
                 cmd_dict_list = []
@@ -774,6 +831,32 @@ class configconf(object):
                         ui_pw2_invalid_characters_msg = key.childNodes[0].nodeValue
                     elif key.getAttribute('name') == 'ui_pw3_invalid_characters_msg':
                         ui_pw3_invalid_characters_msg = key.childNodes[0].nodeValue
+                    elif key.getAttribute('name') == 'max_result_blocks_override':
+                        max_result_blocks_override = key.childNodes[0].nodeValue
+
+                        # Validate max_result_blocks_override from conf file
+                        vns = self.validate_num_setting('max_result_blocks_override', max_result_blocks_override, 25, 1, 500)
+                        if vns[0] != "Success":
+                            return vns[0]
+                        max_result_blocks_override = vns[1]
+
+                    for output_type_index in range(1, 21):
+                        record_num = str(output_type_index)
+                        if key.getAttribute('name') == 'output_data_name' + format(output_type_index, '02'):
+                            output_type_dict[record_num]['output_data_name'] = key.childNodes[0].nodeValue
+                            break
+                        elif key.getAttribute('name') == 'output_data_type' + format(output_type_index, '02'):
+                            output_type_dict[record_num]['output_data_type'] = key.childNodes[0].nodeValue
+                            break
+                        elif key.getAttribute('name') == 'output_data_format' + format(output_type_index, '02'):
+                            output_type_dict[record_num]['output_data_format'] = key.childNodes[0].nodeValue
+                            break
+                        elif key.getAttribute('name') == 'output_header_regex' + format(output_type_index, '02'):
+                            output_type_dict[record_num]['output_header_regex'] = key.childNodes[0].nodeValue
+                            break
+                        elif key.getAttribute('name') == 'output_data_regex' + format(output_type_index, '02'):
+                            output_type_dict[record_num]['output_data_regex'] = key.childNodes[0].nodeValue
+                            break
 
                     for custom_result_field_index in range(1, 21):
                         if key.getAttribute('name') == 'custom_result_field' + format(custom_result_field_index, '02'):
@@ -843,6 +926,7 @@ class configconf(object):
                 'ui_var3_invalid_characters_msg' : ui_var3_invalid_characters_msg, 'ui_var4_invalid_characters_msg' : ui_var4_invalid_characters_msg, \
                 'ui_pw1_invalid_characters_msg' : ui_pw1_invalid_characters_msg, 'ui_pw2_invalid_characters_msg' : ui_pw2_invalid_characters_msg, \
                 'ui_pw3_invalid_characters_msg' : ui_pw3_invalid_characters_msg, \
+                'output_type_dict' : output_type_dict, 'max_result_blocks_override' : max_result_blocks_override, \
                 'cmd_dict_list' : cmd_dict_list, 'custom_result_field_list' : custom_result_field_list})
 
             return 'Success'
@@ -869,7 +953,7 @@ class configconf(object):
                     cmd_dict = {}
                     cmd_dict['cmd' + branch_list_suffix2] = initial_key.childNodes[0].nodeValue
 
-                    cmd_branch_regex_list_dict = {}
+                    cmd_select_regex_list_dict = {}
                     cmd_success_regex_list = []
                     cmd_fail_regex_list = []
                     for key in keys[1]:
@@ -933,27 +1017,45 @@ class configconf(object):
                                 return vns[0]
                             cmd_dict['cmd_max_output_before_truncate'] = vns[1]
 
-                        if branch_list_suffix == '' and 'branch' in key.getAttribute('name'):
-                            for cmd_regex_index in range(1, 21):
-                                for branch_index in range(1, 21):
-                                    branch_sub_list_name = 'branch' + format(branch_index, '02')
-                                    branch_list_sub_abbrev = '_' + branch_sub_list_name + '_'
-                                    if key.getAttribute('name') == 'cmd' + format(cmd_index, '02') + branch_list_sub_abbrev + 'regex' + str(cmd_regex_index):
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_cli_cmd_sleep':
+                            cmd_dict['cmd_cli_cmd_sleep'] = key.childNodes[0].nodeValue
+
+                            # Validate cmd_cli_cmd_sleep from conf file
+                            vns = self.validate_num_setting('cmd_cli_cmd_sleep', cmd_dict['cmd_cli_cmd_sleep'], 0, 0, 10)
+                            if vns[0] != "Success":
+                                return vns[0]
+                            cmd_dict['cmd_cli_cmd_sleep'] = vns[1]
+
+                        elif key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_send_linefeed':
+                            cmd_dict['cmd_send_linefeed'] = key.childNodes[0].nodeValue
+
+                        if 'select' in key.getAttribute('name'):
+                            for select_index in range(1, 21):
+                                select_sub_list_name = 'select' + format(select_index, '02')
+                                select_list_sub_abbrev = '_' + select_sub_list_name + '_'
+                                if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_' + select_sub_list_name:
+                                    cmd_dict['cmd' + '_' + select_sub_list_name] = key.childNodes[0].nodeValue
+                                    continue
+                                for cmd_regex_index in range(1, 21):
+                                    if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + select_list_sub_abbrev + 'regex' + str(cmd_regex_index):
                                         try:
-                                            cmd_branch_regex_list_dict[branch_sub_list_name]
+                                            cmd_select_regex_list_dict[select_sub_list_name]
                                         except:
-                                            cmd_branch_regex_list_dict[branch_sub_list_name] = []
-                                        cmd_branch_regex_list_dict[branch_sub_list_name].append(key.childNodes[0].nodeValue)
+                                            cmd_select_regex_list_dict[select_sub_list_name] = []
+                                        cmd_select_regex_list_dict[select_sub_list_name].append(key.childNodes[0].nodeValue)
+                                        continue
 
                         for cmd_regex_index in range(1, 21):
                             if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_success_regex' + str(cmd_regex_index):
                                 cmd_success_regex_list.append(key.childNodes[0].nodeValue)
+                                continue
 
                         for cmd_regex_index in range(1, 21):
                             if key.getAttribute('name') == 'cmd' + branch_list_suffix + format(cmd_index, '02') + '_fail_regex' + str(cmd_regex_index):
                                 cmd_fail_regex_list.append(key.childNodes[0].nodeValue)
+                                continue
 
-                    cmd_dict['cmd_branch_regex_list_dict'] = cmd_branch_regex_list_dict
+                    cmd_dict['cmd_select_regex_list_dict'] = cmd_select_regex_list_dict
                     cmd_dict['cmd_success_regex_list'] = cmd_success_regex_list
                     cmd_dict['cmd_fail_regex_list'] = cmd_fail_regex_list
                     cmd_dict_list.append(cmd_dict)

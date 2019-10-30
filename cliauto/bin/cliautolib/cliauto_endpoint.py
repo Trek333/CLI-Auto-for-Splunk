@@ -100,11 +100,11 @@ class endpoint(object):
                                               })
                     return None
 
-                # If getconfig unsuccessful, log errmsg and exit script
-                gc = self.objcfg.getconfig()
-                if gc != 'Success':
-                    logging.error('Error, getconfig function, err = ' + str(gc))
-                    self.response = json.dumps({ 'payload': 'Error, getconfig function, err = ' + str(gc),
+                # If getconfigall unsuccessful, log errmsg and exit script
+                gca = self.objcfg.getconfigall()
+                if gca != 'Success':
+                    logging.error('Error, getconfig function, err = ' + str(gca))
+                    self.response = json.dumps({ 'payload': 'Error, getconfig function, err = ' + str(gca),
                                                  'status': 500  # HTTP status code
                                               })
                     return None
@@ -163,6 +163,16 @@ class endpoint(object):
             elif self.fargs['cmdtype'].lower() == 'hb':
                 logging.debug('cmdtype=hb')
                 self.response = json.dumps({ 'payload': 'Success, Heartbeat received',
+                                             'status': 200  # HTTP status code
+                                          })
+                return None
+
+            elif self.fargs['cmdtype'].lower() == 'get_version':
+                logging.debug('cmdtype=get_version')
+
+                gv = self.get_version()
+
+                self.response = json.dumps({ 'payload': gv[1],
                                              'status': 200  # HTTP status code
                                           })
                 return None
@@ -281,7 +291,7 @@ class endpoint(object):
 
         # Check that the POST form arguments are defined
         try:
-            if self.fargs['cmdtype'].lower() == 'hb'or self.fargs['cmdtype'].lower() == 'status':
+            if self.fargs['cmdtype'].lower() == 'hb' or self.fargs['cmdtype'].lower() == 'status' or self.fargs['cmdtype'].lower() == 'get_version':
                 self.fargs['var1'] = ''
                 self.fargs['var2'] = ''
                 self.fargs['var3'] = ''
@@ -611,3 +621,133 @@ class endpoint(object):
         for i, j in params:
             flattened[i] = flattened.get(i) or j
         return flattened
+
+    def get_version(self):
+
+        try:
+
+            try:
+
+                python_version = 'not available'
+
+                # Get Python version
+                python_version = sys.version
+                python_version = python_version.replace('\n',' ')
+                python_version = python_version.replace('\r',' ')
+
+            except Exception as err:
+                logging.error('Error, get_version function...python_version, err = ' + str(err))
+                python_version = 'not available'
+
+            try:
+
+                splunklib_python_version = 'not available'
+
+                # Get Splunk Python SDK version
+                import splunklib
+                splunklib_python_version = splunklib.__version__
+
+            except Exception as err:
+                logging.error('Error, get_version function...splunklib_python_version, err = ' + str(err))
+                splunklib_python_version = 'not available'
+
+            try:
+
+                pexpect_version = 'not available'
+
+                # Get pexpect version
+                import pexpect
+                pexpect_version = pexpect.__version__
+
+            except Exception as err:
+                logging.error('Error, get_version function...pexpect_version, err = ' + str(err))
+                pexpect_version = 'not available'
+
+            try:
+
+                ptyprocess_version = 'not available'
+
+                # Get ptyprocess version
+                import ptyprocess
+                ptyprocess_version = ptyprocess.__version__
+
+            except Exception as err:
+                logging.error('Error, get_version function...ptyprocess_version, err = ' + str(err))
+                ptyprocess_version = 'not available'
+
+            try:
+
+                openssh_version = 'not available'
+
+                # Get Openssh version
+                from pxssh_cliauto import pxssh_cliauto
+                ssh_session = pxssh_cliauto()
+                openssh_version = ssh_session.get_version()
+                del ssh_session
+
+            except Exception as err:
+                logging.error('Error, get_version function...openssh_version, err = ' + str(err))
+                openssh_version = 'not available'
+
+            try:
+
+                openssh_ciphers = 'not available'
+
+                # Get Openssh ciphers
+                ssh_session = pxssh_cliauto()
+                openssh_ciphers = ssh_session.query_ciphers()
+                del ssh_session
+
+            except Exception as err:
+                logging.error('Error, get_version function...openssh_ciphers, err = ' + str(err))
+                openssh_version = 'not available'
+
+            try:
+
+                cliauto_version = 'not available'
+                cliauto_ciphers = 'not available'
+
+                # Create configuration object
+                self.objcfg = configconf(self.fargs, self.sargs, self.ppid)
+                if self.objcfg.status != 'Success':
+
+                    cliauto_version = 'not available'
+                    cliauto_ciphers = 'not available'
+
+                else:
+
+                    # Get getconfig (cliauto_version)
+                    gap = self.objcfg.getappversion()
+                    if gap != 'Success':
+                        cliauto_version = 'not available'
+                    else:
+                        cliauto_version = self.objcfg.cliauto_version
+
+                    # Get getconfig (cliauto_ciphers)
+                    gc = self.objcfg.getconfig()
+                    if gc != 'Success':
+                        cliauto_ciphers = 'not available'
+                    else:
+                        cliauto_ciphers = self.objcfg.cipher
+
+            except Exception as err:
+                logging.error('Error, get_version function...cliauto_version & cliauto_ciphers, err = ' + str(err))
+                cliauto_version = 'not available'
+                cliauto_ciphers = 'not available'
+
+            data = {"python_version": python_version, "splunklib_python_version": splunklib_python_version, \
+                "pexpect_version": pexpect_version, "ptyprocess_version": ptyprocess_version, \
+                "openssh_version": openssh_version, "openssh_ciphers": openssh_ciphers, \
+                "cliauto_version": cliauto_version, "cliauto_ciphers": cliauto_ciphers }
+
+            return ['Success', data]
+
+        except Exception as err_main:
+            logging.error('Error, get_version function..., err_main = ' + str(err_main))
+            logging.error('Error on line {}'.format(sys.exc_info()[-1].tb_lineno))
+            data = {"python_version": 'not available', "splunklib_python_version": 'not available', \
+                "pexpect_version": 'not available', "ptyprocess_version": 'not available', \
+                "openssh_version": 'not available', "openssh_ciphers": 'not available', \
+                "cliauto_version": 'not available', "cliauto_ciphers": 'not available'}
+            return ['Error, get_version function..., err_main = ' + str(err_main), data]
+
