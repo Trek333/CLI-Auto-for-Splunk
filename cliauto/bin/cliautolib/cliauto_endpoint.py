@@ -695,12 +695,14 @@ class endpoint(object):
 
                 # Get Openssh ciphers
                 ssh_session = pxssh_cliauto()
-                openssh_ciphers = ssh_session.query_ciphers()
+                openssh_ciphers_raw = ssh_session.query_ciphers()
+                if 'illegal option' not in openssh_ciphers_raw:
+                    openssh_ciphers = openssh_ciphers_raw
                 del ssh_session
 
             except Exception as err:
                 logging.error('Error, get_version function...openssh_ciphers, err = ' + str(err))
-                openssh_version = 'not available'
+                openssh_ciphers = 'not available'
 
             try:
 
